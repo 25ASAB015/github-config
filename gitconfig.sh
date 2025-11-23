@@ -1097,20 +1097,13 @@ configure_git() {
     if command -v git-credential-manager &> /dev/null; then
         info "Configurando Git Credential Manager..."
         
-        # Intentar configuración automática
+        # Intentar configuración automática (esto puede agregar configuraciones adicionales)
         if git-credential-manager configure &>/dev/null; then
             success "Git Credential Manager configurado automáticamente"
-        else
-            # Configuración manual como fallback
-            git config --global credential.helper manager
-            success "Git Credential Manager configurado manualmente"
         fi
-
-        # Configuración específica para Linux: usar secretservice (GNOME Keyring / KWallet)
-        if [[ "$(uname -s)" == "Linux" ]]; then
-            git config --global credential.credentialStore secretservice
-            success "Configurado credentialStore como 'secretservice' para Linux"
-        fi
+        
+        # Nota: La configuración principal ya está en .gitconfig generado
+        success "Git Credential Manager listo para usar"
     fi
 
     success "Configuración Git completada exitosamente"
@@ -1172,7 +1165,8 @@ generate_gitconfig() {
 	template = ~/.gitmessage
 
 [credential]
-	helper = $credential_helper
+	helper = $credential_helper$(if [[ "$os_type" == "Linux" ]] && [[ "$credential_helper" == "manager" ]]; then echo "
+	credentialStore = secretservice"; fi)
 
 [init]
 	defaultBranch = main
