@@ -1105,6 +1105,12 @@ configure_git() {
             git config --global credential.helper manager
             success "Git Credential Manager configurado manualmente"
         fi
+
+        # Configuración específica para Linux: usar secretservice (GNOME Keyring / KWallet)
+        if [[ "$(uname -s)" == "Linux" ]]; then
+            git config --global credential.credentialStore secretservice
+            success "Configurado credentialStore como 'secretservice' para Linux"
+        fi
     fi
 
     success "Configuración Git completada exitosamente"
@@ -1637,7 +1643,8 @@ show_final_instructions() {
     printf "%b\n" "${BLD}${CCY}🔐 PASO 5: CREDENTIAL MANAGER${CNC}"
     printf "%b\n" "${DIM}${CNC}   ├─ ${CGR}✓${CNC} Git Credential Manager configurado"
     printf "%b\n" "${DIM}${CNC}   ├─ ${DIM}No se solicitará contraseña en cada operación${CNC}"
-    printf "%b\n" "${DIM}${CNC}   └─ ${CYE}En el primer push, se abrirá el navegador para autenticar${CNC}"
+    printf "%b\n" "${DIM}${CNC}   ├─ ${CYE}En el primer push, se abrirá el navegador para autenticar${CNC}"
+    printf "%b\n" "${DIM}${CNC}   └─ ${CBL}Pre-autenticar (opcional):${CNC} ${BLD}${CGR}git-credential-manager github login${CNC}"
     echo ""
     
     printf "%b\n" "${BLD}${CCY}💡 COMANDOS ÚTILES:${CNC}"
