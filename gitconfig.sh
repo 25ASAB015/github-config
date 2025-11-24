@@ -108,26 +108,47 @@ validate_email() {
 
 # Logo
 logo() {
-    text="$1"
-    printf "%b" "
-               %%%
-        %%%%%//%%%%%
-      %%************%%%
-  (%%//############*****%%
- %%%%**###&&&&&&&&&###**//
- %%(**##&&&#########&&&##**
- %%(**##*****#####*****##**%%%
- %%(**##     *****     ##**
-   //##   @@**   @@   ##//
-     ##     **###     ##
-     #######     #####//
-       ###**&&&&&**###
-       &&&         &&&
-       &&&////   &&
-          &&//@@@**
-            ..***
-
-   ${BLD}${CRE}[ ${CYE}${text} ${CRE}]${CNC}\n\n"
+    local text="$1"
+    # Array of logo lines (16 lines)
+    local logo_lines=(
+        "               %%%"
+        "        %%%%%//%%%%%"
+        "      %%************%%%"
+        "  (%%//############*****%%"
+        " %%%%**###&&&&&&&&&###**//"
+        " %%(**##&&&#########&&&##**"
+        " %%(**##*****#####*****##**%%%"
+        " %%(**##     *****     ##**"
+        "   //##   @@**   @@   ##//"
+        "     ##     **###     ##"
+        "     #######     #####//"
+        "       ###**&&&&&**###"
+        "       &&&         &&&"
+        "       &&&////   &&"
+        "          &&//@@@**"
+        "            ..***"
+    )
+    
+    # Hide cursor during animation
+    tput civis
+    
+    # Ensure cursor is restored even if function exits early (e.g., Ctrl+C)
+    trap 'tput cnorm' EXIT INT TERM
+    
+    # Display each line with animation effect
+    for line in "${logo_lines[@]}"; do
+        printf "%b%b%b\n" "${CYE}" "$line" "${CNC}"
+        sleep 0.03
+    done
+    
+    # Display text banner below logo
+    printf "\n   %b%b[ %b%s %b]%b\n\n" "${BLD}" "${CRE}" "${CYE}" "${text}" "${CRE}" "${CNC}"
+    
+    # Restore cursor
+    tput cnorm
+    
+    # Clear trap after successful completion
+    trap - EXIT INT TERM
 }
 
 initial_checks() {
