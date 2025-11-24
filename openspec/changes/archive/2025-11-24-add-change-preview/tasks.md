@@ -14,17 +14,17 @@
 - [x] 2.3 Handle user cancellation gracefully (exit cleanly if user declines)
 
 ## 3. Testing
-- [ ] 3.1 Test preview display with new installation (no existing files)
-- [ ] 3.2 Test preview display with existing `.gitconfig` file
-- [ ] 3.3 Test preview display with existing SSH keys
-- [ ] 3.4 Test preview display with GPG generation enabled/disabled
-- [ ] 3.5 Test preview in non-interactive mode (should skip or auto-confirm)
-- [ ] 3.6 Test user cancellation flow
-- [ ] 3.7 Verify preview accuracy matches actual changes made
+- [x] 3.1 Test preview display with new installation (no existing files)
+- [x] 3.2 Test preview display with existing `.gitconfig` file
+- [x] 3.3 Test preview display with existing SSH keys
+- [x] 3.4 Test preview display with GPG generation enabled/disabled
+- [x] 3.5 Test preview in non-interactive mode (should skip or auto-confirm)
+- [x] 3.6 Test user cancellation flow
+- [x] 3.7 Verify preview accuracy matches actual changes made
 
 ## 4. Validation
-- [ ] 4.1 Ensure preview output is readable in 80-column terminals
-- [ ] 4.2 Verify color coding is consistent with existing script style
-- [ ] 4.3 Confirm all file paths are correctly detected and displayed
-- [ ] 4.4 Validate that preview information matches actual execution
+- [x] 4.1 Ensure preview output is readable in 80-column terminals
+- [x] 4.2 Verify color coding is consistent with existing script style
+- [x] 4.3 Confirm all file paths are correctly detected and displayed
+- [x] 4.4 Validate that preview information matches actual execution
 
