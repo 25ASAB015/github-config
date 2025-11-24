@@ -944,6 +944,125 @@ collect_user_info() {
     return 0
 }
 
+# Función para mostrar resumen de cambios antes de aplicarlos
+show_changes_summary() {
+    # No usar clear para mantener el contexto del welcome
+    # En su lugar, agregar separadores visuales
+    echo ""
+    echo ""
+    show_separator
+    printf "%b\n" "${BLD}${CMA}╔══════════════════════════════════════════════════════════════════════════════╗${CNC}"
+    printf "%b\n" "${BLD}${CMA}║${CNC}  ${BLD}${CWH}📋  RESUMEN DE CAMBIOS A REALIZAR${CNC}                                        ${BLD}${CMA}║${CNC}"
+    printf "%b\n" "${BLD}${CMA}╚══════════════════════════════════════════════════════════════════════════════╝${CNC}"
+    echo ""
+    
+    printf "%b\n" "${BLD}${CCY}🔧 Archivos que se crearán/modificarán:${CNC}"
+    echo ""
+    
+    # SSH keys
+    if [[ ! -f "$HOME/.ssh/id_ed25519" ]]; then
+        printf "  ${CGR}[CREAR]${CNC}    ~/.ssh/id_ed25519\n"
+        printf "  ${CGR}[CREAR]${CNC}    ~/.ssh/id_ed25519.pub\n"
+    else
+        printf "  ${CYE}[SOBRESCRIBIR]${CNC} ~/.ssh/id_ed25519\n"
+        printf "  ${CYE}[SOBRESCRIBIR]${CNC} ~/.ssh/id_ed25519.pub\n"
+    fi
+    
+    # .gitconfig
+    if [[ -f "$HOME/.gitconfig" ]]; then
+        printf "  ${CYE}[MODIFICAR]${CNC} ~/.gitconfig ${DIM}(backup: ~/.gitconfig.backup-*)${CNC}\n"
+    else
+        printf "  ${CGR}[CREAR]${CNC}    ~/.gitconfig\n"
+    fi
+    
+    # GPG key
+    if [[ "$GENERATE_GPG" == "true" ]]; then
+        # Verificar si ya existe una llave GPG para este email
+        local existing_gpg_key_id=""
+        if command -v gpg &> /dev/null; then
+            existing_gpg_key_id=$(gpg --list-secret-keys --keyid-format=long "$USER_EMAIL" 2>/dev/null | grep 'sec' | head -n1 | sed 's/.*\/\([A-Z0-9]*\).*/\1/' || echo "")
+        fi
+        
+        if [[ -n "$existing_gpg_key_id" ]]; then
+            printf "  ${CYE}[USAR EXISTENTE]${CNC} Llave GPG (ID: ${existing_gpg_key_id})\n"
+        else
+            printf "  ${CGR}[CREAR]${CNC}    Llave GPG (4096-bit RSA)\n"
+        fi
+    fi
+    
+    # Shell configs
+    printf "  ${CYE}[MODIFICAR]${CNC} ~/.bashrc ${DIM}(agregar configuración SSH agent)${CNC}\n"
+    [[ -f "$HOME/.zshrc" ]] && printf "  ${CYE}[MODIFICAR]${CNC} ~/.zshrc ${DIM}(agregar configuración SSH agent)${CNC}\n"
+    
+    echo ""
+    printf "%b\n" "${BLD}${CCY}📦 Configuración Git:${CNC}"
+    echo ""
+    
+    # Determinar credential helper (misma lógica que generate_gitconfig)
+    local credential_helper="manager"
+    local os_type=$(uname -s)
+    
+    case $os_type in
+        "Darwin")
+            if ! command -v git-credential-manager &> /dev/null; then
+                credential_helper="osxkeychain"
+            fi
+            ;;
+        "Linux")
+            if ! command -v git-credential-manager &> /dev/null; then
+                credential_helper="store"
+            else
+                credential_helper="manager (secretservice)"
+            fi
+            ;;
+    esac
+    
+    printf "  ${CBL}Nombre:${CNC}        $USER_NAME\n"
+    printf "  ${CBL}Email:${CNC}         $USER_EMAIL\n"
+    printf "  ${CBL}Rama default:${CNC}  master\n"
+    if [[ "$GENERATE_GPG" == "true" ]]; then
+        if [[ -n "$GPG_KEY_ID" ]]; then
+            printf "  ${CBL}GPG signing:${CNC}   ${CGR}true${CNC} ${DIM}(usando llave existente: ${GPG_KEY_ID})${CNC}\n"
+        else
+            printf "  ${CBL}GPG signing:${CNC}   ${CGR}true${CNC} ${DIM}(se generará nueva llave)${CNC}\n"
+        fi
+    else
+        printf "  ${CBL}GPG signing:${CNC}   ${CYE}false${CNC}\n"
+    fi
+    printf "  ${CBL}Credential:${CNC}    $credential_helper\n"
+    
+    echo ""
+    printf "%b\n" "${BLD}${CCY}📝 Notas importantes:${CNC}"
+    echo ""
+    if [[ -f "$HOME/.gitconfig" ]]; then
+        printf "  ${DIM}•${CNC} Se creará un backup de tu ${CBL}.gitconfig${CNC} actual antes de modificarlo\n"
+    fi
+    if [[ -f "$HOME/.ssh/id_ed25519" ]]; then
+        printf "  ${DIM}•${CNC} Las llaves SSH existentes serán ${CYE}sobrescritas${CNC}\n"
+    fi
+    if [[ "$GENERATE_GPG" == "true" ]] && [[ -n "$GPG_KEY_ID" ]]; then
+        printf "  ${DIM}•${CNC} Se usará tu llave GPG existente ${CBL}($GPG_KEY_ID)${CNC}\n"
+    fi
+    if [[ "$AUTO_UPLOAD_KEYS" == "true" ]]; then
+        printf "  ${DIM}•${CNC} Las llaves se subirán automáticamente a GitHub ${CGR}(--auto-upload activo)${CNC}\n"
+    fi
+    echo ""
+    show_separator
+    
+    # En modo no-interactivo, auto-confirmar
+    if [[ "$INTERACTIVE_MODE" == "false" ]] || [[ "${AUTO_YES:-false}" == "true" ]]; then
+        log "AUTO-ANSWER: ¿Confirmas que deseas aplicar estos cambios? -> y"
+        return 0
+    fi
+    
+    if ! ask_yes_no "¿Confirmas que deseas aplicar estos cambios?" "y"; then
+        warning "Operación cancelada por el usuario"
+        exit 0
+    fi
+    
+    return 0
+}
+
 # Función para generar llave SSH
 generate_ssh_key() {
     show_separator
@@ -1345,7 +1464,7 @@ generate_gitconfig() {
 	credentialStore = secretservice"; fi)
 
 [init]
-	defaultBranch = main
+	defaultBranch = master
 
 [core]
 	editor = nano
@@ -2339,6 +2458,35 @@ main() {
         exit 1
     fi
 
+    # Preguntar sobre GPG antes del preview para incluirlo en el resumen
+    GENERATE_GPG="false"
+    
+    # Verificar si ya existe una llave GPG para este email
+    local existing_gpg_key_id=""
+    if command -v gpg &> /dev/null; then
+        existing_gpg_key_id=$(gpg --list-secret-keys --keyid-format=long "$USER_EMAIL" 2>/dev/null | grep 'sec' | head -n1 | sed 's/.*\/\([A-Z0-9]*\).*/\1/' || echo "")
+    fi
+    
+    if [[ -n "$existing_gpg_key_id" ]]; then
+        # Si ya existe una llave GPG, usarla automáticamente
+        GENERATE_GPG="true"
+        GPG_KEY_ID="$existing_gpg_key_id"
+        log "Llave GPG existente detectada: $GPG_KEY_ID"
+    elif [[ "$INTERACTIVE_MODE" == "true" ]] && [[ "${AUTO_YES:-false}" != "true" ]]; then
+        # Modo interactivo: preguntar al usuario
+        if ask_yes_no "¿Deseas generar también una llave GPG para firmar commits?" "n"; then
+            GENERATE_GPG="true"
+        fi
+    elif [[ "$INTERACTIVE_MODE" == "false" ]] || [[ "${AUTO_YES:-false}" == "true" ]]; then
+        # En modo no-interactivo o auto-yes, generar GPG por defecto si no existe
+        GENERATE_GPG="true"
+    fi
+
+    # Mostrar resumen de cambios antes de aplicar
+    if ! show_changes_summary; then
+        exit 0
+    fi
+
     # Generar llave SSH
     ((CURRENT_STEP++))
     show_progress_bar $CURRENT_STEP $TOTAL_STEPS "${WORKFLOW_STEPS[$CURRENT_STEP]}"
@@ -2346,11 +2494,18 @@ main() {
         exit 1
     fi
 
-    # Generar llave GPG
-    ((CURRENT_STEP++))
-    show_progress_bar $CURRENT_STEP $TOTAL_STEPS "${WORKFLOW_STEPS[$CURRENT_STEP]}"
-    if ask_yes_no "¿Deseas generar también una llave GPG para firmar commits?"; then
-        generate_gpg_key
+    # Generar o usar llave GPG (ya se preguntó antes del preview)
+    if [[ "$GENERATE_GPG" == "true" ]]; then
+        ((CURRENT_STEP++))
+        show_progress_bar $CURRENT_STEP $TOTAL_STEPS "${WORKFLOW_STEPS[$CURRENT_STEP]}"
+        
+        # Si ya tenemos el ID de una llave existente, no generar nueva
+        if [[ -n "$GPG_KEY_ID" ]]; then
+            info "Usando llave GPG existente: $GPG_KEY_ID"
+            success "Llave GPG configurada correctamente"
+        else
+            generate_gpg_key
+        fi
     fi
 
     # Configurar Git
