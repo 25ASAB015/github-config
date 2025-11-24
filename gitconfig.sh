@@ -1464,7 +1464,7 @@ generate_gitconfig() {
 	credentialStore = secretservice"; fi)
 
 [init]
-	defaultBranch = main
+	defaultBranch = master
 
 [core]
 	editor = nano
