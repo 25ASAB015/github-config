@@ -1502,14 +1502,14 @@ EOF
 ### Priorización de Mejoras (Orden de Implementación)
 
 #### 🔥 **ALTA PRIORIDAD** (Implementar primero)
-1. **Barra de progreso visual** (#1) - Mejora UX inmediatamente
-2. **Preview de cambios** (#3) - Transparencia y confianza
+ok 1. **Barra de progreso visual** (#1) - Mejora UX inmediatamente
+ok 2. **Preview de cambios** (#3) - Transparencia y confianza
 3. **Sistema de rollback** (#12) - Seguridad crítica
 4. **Modo dry-run** (#5) - Testing y confianza
 5. **Manejo de errores mejorado** (#20) - Robustez
 
 #### ⚡ **MEDIA PRIORIDAD** (Implementar después)
-6. **Modo interactivo vs no-interactivo** (#2) - Automatización
+ok 6. **Modo interactivo vs no-interactivo** (#2) - Automatización
 7. **Sistema de ayuda** (#18) - Documentación
 8. **Logging estructurado** (#14) - Debugging
 9. **Validación robusta** (#19) - Calidad de datos
@@ -1517,7 +1517,7 @@ EOF
 
 #### 🎨 **BAJA PRIORIDAD** (Nice to have)
 11. **Notificaciones desktop** (#4)
-12. **Logo animado** (#9)
+ok 12. **Logo animado** (#9)
 13. **Modo tutorial** (#24)
 14. **Perfiles pre-configurados** (#22)
 15. **Tema de colores mejorado** (#6)
