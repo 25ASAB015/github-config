@@ -33,6 +33,13 @@ BACKUP_DIR="$SCRIPT_DIR/backup-$(date +%Y%m%d_%H%M%S)"
 LOG_FILE="$SCRIPT_DIR/setup.log"
 DEBUG="${DEBUG:-false}"  # Variable para modo debug
 
+# Variables de modo interactivo/no-interactivo
+INTERACTIVE_MODE="${INTERACTIVE_MODE:-true}"
+AUTO_UPLOAD_KEYS=false  # Se establece con el flag --auto-upload
+SSH_KEY_UPLOADED=false
+GPG_KEY_UPLOADED=false
+GH_INSTALL_ATTEMPTED=false  # Flag para evitar instalación duplicada de gh
+
 # Definir etapas del proceso para barra de progreso
 declare -A WORKFLOW_STEPS=(
     [1]="Verificando dependencias"
@@ -463,9 +470,56 @@ ${BLD}${CGR}[${CRE}!${CGR}]${CNC} ${BLD}${CRE}Solo edita configuraciones relacio
 
 "
 
+    # Mostrar información sobre modo no-interactivo si está activo
+    if [[ "$INTERACTIVE_MODE" == "false" ]]; then
+        echo ""
+        printf "%b\n" "${BLD}${CCY}ℹ️  MODO NO-INTERACTIVO ACTIVO${CNC}"
+        if [[ -n "$USER_EMAIL" ]] && [[ -n "$USER_NAME" ]]; then
+            printf "%b\n" "${DIM}   Usando: ${CBL}USER_EMAIL=${USER_EMAIL}${DIM}, ${CBL}USER_NAME=${USER_NAME}${CNC}"
+        else
+            printf "%b\n" "${CYE}   ⚠️  ADVERTENCIA: USER_EMAIL y USER_NAME deben estar definidos${CNC}"
+            printf "%b\n" "${DIM}   Ejemplo: ${CBL}USER_EMAIL=\"tu@email.com\" USER_NAME=\"Tu Nombre\" ./gitconfig.sh --non-interactive${CNC}"
+        fi
+        echo ""
+    fi
+
     ask_yes_no "¿Deseas continuar?" "n" "true"
 }
 
+# Función para mostrar ayuda
+show_help() {
+    printf "%b\n" "${BLD}${CMA}╔══════════════════════════════════════════════════════════════════════════════╗${CNC}"
+    printf "%b\n" "${BLD}${CMA}║${CNC}  ${BLD}${CWH}                    GITCONFIG.SH - CONFIGURADOR DE GIT                        ${CNC}${BLD}${CMA}║${CNC}"
+    printf "%b\n" "${BLD}${CMA}╚══════════════════════════════════════════════════════════════════════════════╝${CNC}"
+    printf "%b\n" "${BLD}${CCY}📋 DESCRIPCIÓN:${CNC} ${DIM}Script interactivo para configurar Git, SSH, GPG y GitHub CLI${CNC}"
+    printf "%b\n" "${BLD}${CCY}🚀 USO:${CNC} ${CBL}./gitconfig.sh${CNC} ${DIM}[OPCIONES]${CNC}"
+    echo ""
+    printf "%b\n" "${BLD}${CCY}⚙️  OPCIONES:${CNC}"
+    printf "%b\n" "   ${CGR}-h, --help${CNC}              ${DIM}Mostrar esta ayuda${CNC}"
+    printf "%b\n" "   ${CGR}--non-interactive${CNC}        ${DIM}Modo no-interactivo (requiere USER_EMAIL y USER_NAME)${CNC}"
+    printf "%b\n" "   ${CGR}--auto-upload${CNC}            ${DIM}Subir llaves a GitHub usando gh CLI (requiere autenticación previa)${CNC}"
+    echo ""
+    printf "%b\n" "${BLD}${CCY}🔧 VARIABLES DE ENTORNO:${CNC}"
+    printf "%b\n" "   ${CBL}INTERACTIVE_MODE${CNC}         ${DIM}true|false${CNC} ${CYE}(default: true)${CNC} - Controla si el script espera entrada del usuario${CNC}"
+    printf "%b\n" "   ${CBL}USER_EMAIL${CNC} ${CYE}(requerido en modo no-interactivo)${CNC} - Email de GitHub para configurar Git${CNC}"
+    printf "%b\n" "   ${CBL}USER_NAME${CNC} ${CYE}(requerido en modo no-interactivo)${CNC} - Nombre completo para configurar Git${CNC}"
+    echo ""
+    printf "%b\n" "${BLD}${CCY}💡 EJEMPLOS:${CNC}"
+    printf "%b\n" "   ${DIM}# Interactivo:${CNC} ${CGR}./gitconfig.sh${CNC}"
+    printf "%b\n" "   ${DIM}# No-interactivo (requiere variables):${CNC}"
+    printf "%b\n" "   ${CGR}USER_EMAIL=\"tu@email.com\" USER_NAME=\"Tu Nombre\" ./gitconfig.sh --non-interactive${CNC}"
+    printf "%b\n" "   ${DIM}# No-interactivo + auto-upload:${CNC}"
+    printf "%b\n" "   ${CGR}USER_EMAIL=\"tu@email.com\" USER_NAME=\"Tu Nombre\" ./gitconfig.sh --non-interactive --auto-upload${CNC}"
+    echo ""
+    printf "%b\n" "${BLD}${CCY}⚠️  NOTAS IMPORTANTES:${CNC}"
+    printf "%b\n" "   ${CYE}•${CNC} ${DIM}En modo no-interactivo, ${CBL}USER_EMAIL${DIM} y ${CBL}USER_NAME${DIM} son ${CRE}OBLIGATORIOS${DIM}${CNC}"
+    printf "%b\n" "   ${CYE}•${CNC} ${DIM}Las preguntas sí/no usan sus valores por defecto (no existe auto-confirmación de 'sí')${CNC}"
+    printf "%b\n" "   ${CYE}•${CNC} ${DIM}Las respuestas automáticas se registran en el archivo de log${CNC}"
+    printf "%b\n" "   ${CYE}•${CNC} ${DIM}El modo interactivo es el comportamiento por defecto${CNC}"
+    printf "%b\n" "   ${CYE}•${CNC} ${DIM}Archivo de log: ${CBL}~/.github-keys-setup/setup.log${CNC}${DIM}${CNC}"
+    show_separator
+    printf "%b\n" "${DIM}AUTOR:${CNC} ${CBL}25asab015${CNC} ${DIM}<25asab015@ujmd.edu.sv>${CNC}  ${DIM}│${CNC}  ${DIM}LICENCIA:${CNC} ${CBL}GPL-3.0${CNC}"
+}
 
 # Función para preguntar sí/no con valor por defecto
 ask_yes_no() {
@@ -473,6 +527,13 @@ ask_yes_no() {
     local default="${2:-y}"
     local exit_on_no="${3:-false}"
     local response
+
+    # Modo no-interactivo
+    if [[ "$INTERACTIVE_MODE" == "false" ]]; then
+        local answer="$default"
+        log "AUTO-ANSWER: $prompt -> $answer"
+        [[ "$answer" == "y" ]] && return 0 || return 1
+    fi
 
     while true; do
         if [ "$default" = "y" ]; then
@@ -594,6 +655,15 @@ check_dependencies() {
     done
 
     for dep in "${deps[@]}"; do
+        # Si gh ya se intentó instalar en verificación temprana, omitirlo aquí
+        if [[ "$dep" == "gh" ]] && [[ "$GH_INSTALL_ATTEMPTED" == "true" ]]; then
+            # Verificar si ahora está instalado (puede que se haya instalado en early check)
+            if command -v "$dep" &> /dev/null; then
+                continue  # Está instalado, no agregar a missing
+            fi
+            # Si no está instalado pero ya se intentó, no agregarlo de nuevo
+            continue
+        fi
         if ! command -v "$dep" &> /dev/null; then
             missing_deps+=("$dep")
         fi
@@ -812,6 +882,37 @@ collect_user_info() {
     echo -e "${BLD}📝 INFORMACIÓN DEL USUARIO${CNC}"
     show_separator
 
+    # Modo no-interactivo: usar variables de entorno
+    if [[ "$INTERACTIVE_MODE" == "false" ]]; then
+        if [[ -z "$USER_EMAIL" ]]; then
+            error "USER_EMAIL no está definido. Requerido en modo no-interactivo."
+            echo ""
+            info "Ejemplo de uso:"
+            printf "%b\n" "${CBL}USER_EMAIL=\"tu@email.com\" USER_NAME=\"Tu Nombre\" ./gitconfig.sh --non-interactive${CNC}"
+            return 1
+        fi
+        
+        if ! validate_email "$USER_EMAIL"; then
+            error "USER_EMAIL inválido: $USER_EMAIL"
+            return 1
+        fi
+        
+        if [[ -z "$USER_NAME" ]]; then
+            error "USER_NAME no está definido. Requerido en modo no-interactivo."
+            echo ""
+            info "Ejemplo de uso:"
+            printf "%b\n" "${CBL}USER_EMAIL=\"tu@email.com\" USER_NAME=\"Tu Nombre\" ./gitconfig.sh --non-interactive${CNC}"
+            return 1
+        fi
+        
+        info "Usando información de variables de entorno:"
+        info "  Email: $USER_EMAIL"
+        info "  Nombre: $USER_NAME"
+        success "Información del usuario recopilada"
+        return 0
+    fi
+
+    # Modo interactivo: pedir información
     while true; do
         echo -ne "${CBL}Ingresa tu email de GitHub: ${CNC}"
         read -r USER_EMAIL
@@ -856,6 +957,14 @@ generate_ssh_key() {
     chmod 700 "$HOME/.ssh"
 
     # Generar llave SSH
+    # Si el archivo ya existe, forzar sobrescritura en modo no-interactivo
+    if [[ "$INTERACTIVE_MODE" == "false" ]]; then
+        # Forzar sobrescritura sin preguntar
+        if [[ -f "$HOME/.ssh/id_ed25519" ]]; then
+            rm -f "$HOME/.ssh/id_ed25519" "$HOME/.ssh/id_ed25519.pub"
+        fi
+    fi
+    
     ssh-keygen -t ed25519 -C "$USER_EMAIL" -f "$HOME/.ssh/id_ed25519" -N "" || {
         error "No se pudo generar la llave SSH"
         return 1
@@ -1523,6 +1632,11 @@ EOF
 
 # Función para mostrar las llaves generadas
 display_keys() {
+    # Si --auto-upload está activo, las llaves ya se subieron, no es necesario mostrarlas
+    if [[ "$AUTO_UPLOAD_KEYS" == "true" ]]; then
+        return 0
+    fi
+
     show_separator
     echo -e "${BLD}📋 RESUMEN DE LLAVES GENERADAS${CNC}"
     show_separator
@@ -1642,6 +1756,400 @@ EOF
 }
 
 
+# Funciones para subida automática a GitHub
+ensure_github_cli_ready() {
+    local early_mode="${1:-false}"
+    
+    # Verificar si gh está instalado
+    if ! command -v gh &> /dev/null; then
+        show_separator
+        printf "%b\n" "${BLD}${CYE}⚠️  GITHUB CLI NO ESTÁ INSTALADO${CNC}"
+        show_separator
+        echo ""
+        
+        if [[ "$early_mode" == "early" ]]; then
+            error "El flag --auto-upload requiere que GitHub CLI (gh) esté instalado y configurado."
+            echo ""
+            info "GitHub CLI es necesario para subir automáticamente las llaves SSH y GPG a tu cuenta de GitHub."
+            echo ""
+        else
+            info "Para subir llaves automáticamente a GitHub, necesitas instalar GitHub CLI (gh)."
+            echo ""
+        fi
+        
+        if [[ "$INTERACTIVE_MODE" == "true" ]]; then
+            if ask_yes_no "¿Deseas que el script intente instalar GitHub CLI automáticamente?" "y"; then
+                local os_type
+                os_type=$(detect_os)
+                
+                case "$os_type" in
+                    arch|manjaro|endeavouros|garuda)
+                        GH_INSTALL_ATTEMPTED=true
+                        if auto_install_dependencies "$os_type" github-cli; then
+                            success "GitHub CLI instalado correctamente"
+                            echo ""
+                        else
+                            error "No se pudo instalar GitHub CLI automáticamente"
+                            show_manual_gh_install_instructions "$os_type"
+                            if [[ "$early_mode" == "early" ]]; then
+                                echo ""
+                                error "No se puede continuar sin GitHub CLI instalado."
+                                echo ""
+                                info "Instala GitHub CLI manualmente y vuelve a ejecutar el script con ${CBL}--auto-upload${CNC}"
+                                exit 1
+                            fi
+                            return 1
+                        fi
+                        ;;
+                    ubuntu|debian|linuxmint|pop)
+                        GH_INSTALL_ATTEMPTED=true
+                        if auto_install_dependencies "$os_type" gh; then
+                            success "GitHub CLI instalado correctamente"
+                            echo ""
+                        else
+                            error "No se pudo instalar GitHub CLI automáticamente"
+                            show_manual_gh_install_instructions "$os_type"
+                            if [[ "$early_mode" == "early" ]]; then
+                                echo ""
+                                error "No se puede continuar sin GitHub CLI instalado."
+                                echo ""
+                                info "Instala GitHub CLI manualmente y vuelve a ejecutar el script con ${CBL}--auto-upload${CNC}"
+                                exit 1
+                            fi
+                            return 1
+                        fi
+                        ;;
+                    *)
+                        show_manual_gh_install_instructions "$os_type"
+                        if [[ "$early_mode" == "early" ]]; then
+                            echo ""
+                            error "No se puede continuar sin GitHub CLI instalado."
+                            echo ""
+                            info "Instala GitHub CLI manualmente y vuelve a ejecutar el script con ${CBL}--auto-upload${CNC}"
+                            exit 1
+                        fi
+                        return 1
+                        ;;
+                esac
+            else
+                show_manual_gh_install_instructions "$(detect_os)"
+                if [[ "$early_mode" == "early" ]]; then
+                    echo ""
+                    error "El flag --auto-upload requiere GitHub CLI instalado y configurado."
+                    echo ""
+                    info "El script no puede continuar sin GitHub CLI. Instálalo y vuelve a ejecutar con ${CBL}--auto-upload${CNC}"
+                    exit 1
+                fi
+                return 1
+            fi
+        else
+            # Modo no-interactivo: mostrar instrucciones claras
+            show_manual_gh_install_instructions "$(detect_os)"
+            if [[ "$early_mode" == "early" ]]; then
+                echo ""
+                error "El flag --auto-upload requiere que GitHub CLI (gh) esté instalado y autenticado."
+                echo ""
+                info "En modo no-interactivo, debes instalar y autenticar GitHub CLI antes de ejecutar este script:"
+                echo ""
+                echo "  1. Instala GitHub CLI:"
+                echo "     ${CBL}sudo pacman -S github-cli${CNC}  # Arch Linux"
+                echo "     ${CBL}sudo apt install gh${CNC}        # Ubuntu/Debian"
+                echo ""
+                echo "  2. Autentica GitHub CLI:"
+                echo "     ${CBL}gh auth login${CNC}"
+                echo ""
+                echo "  3. Vuelve a ejecutar este script con ${CBL}--auto-upload${CNC}"
+                echo ""
+                exit 1
+            fi
+            return 1
+        fi
+    fi
+
+    # Verificar autenticación
+    local auth_status
+    auth_status=$(gh auth status 2>&1)
+    local auth_exit_code=$?
+
+    if [[ $auth_exit_code -eq 0 ]]; then
+        return 0
+    fi
+
+    # No está autenticado
+    show_separator
+    printf "%b\n" "${BLD}${CYE}⚠️  GITHUB CLI NO ESTÁ AUTENTICADO${CNC}"
+    show_separator
+    echo ""
+    
+    if [[ "$INTERACTIVE_MODE" == "true" ]]; then
+        if [[ "$early_mode" == "early" ]]; then
+            error "El flag --auto-upload requiere que GitHub CLI (gh) esté autenticado."
+            echo ""
+            info "GitHub CLI está instalado pero necesita autenticación para subir automáticamente las llaves SSH y GPG a tu cuenta de GitHub."
+            echo ""
+        else
+            info "GitHub CLI está instalado pero requiere autenticación para subir llaves."
+            echo ""
+        fi
+        info "Opciones de autenticación:"
+        echo "  1. ${CBL}gh auth login${CNC} - Autenticación interactiva (recomendada)"
+        echo "  2. ${CBL}gh auth login --with-token${CNC} - Autenticación con token"
+        echo ""
+        
+        if ask_yes_no "¿Deseas ejecutar 'gh auth login' ahora?" "y"; then
+            echo ""
+            info "Ejecutando autenticación de GitHub CLI..."
+            echo "${DIM}Nota: Sigue las instrucciones en pantalla para completar la autenticación.${CNC}"
+            echo ""
+            
+            if gh auth login; then
+                echo ""
+                success "✓ Autenticación de GitHub CLI completada exitosamente"
+                return 0
+            else
+                echo ""
+                error "La autenticación de GitHub CLI falló"
+                echo ""
+                if [[ "$early_mode" == "early" ]]; then
+                    error "No se puede continuar sin GitHub CLI autenticado."
+                    echo ""
+                    info "Autentica GitHub CLI manualmente con ${CBL}gh auth login${CNC} y vuelve a ejecutar el script con ${CBL}--auto-upload${CNC}"
+                    exit 1
+                fi
+                info "Puedes autenticarte manualmente más tarde con: ${CBL}gh auth login${CNC}"
+                return 1
+            fi
+        else
+            echo ""
+            if [[ "$early_mode" == "early" ]]; then
+                error "El flag --auto-upload requiere GitHub CLI autenticado."
+                echo ""
+                info "El script no puede continuar sin autenticación. Autentica GitHub CLI con ${CBL}gh auth login${CNC} y vuelve a ejecutar con ${CBL}--auto-upload${CNC}"
+                exit 1
+            fi
+            warning "Autenticación omitida. Las llaves no se subirán automáticamente."
+            echo ""
+            info "Para autenticarte más tarde, ejecuta: ${CBL}gh auth login${CNC}"
+            return 1
+        fi
+    else
+        # Modo no-interactivo: instrucciones claras
+        if [[ "$early_mode" == "early" ]]; then
+            error "El flag --auto-upload requiere que GitHub CLI (gh) esté autenticado."
+            echo ""
+            info "GitHub CLI está instalado pero necesita autenticación para subir automáticamente las llaves SSH y GPG a tu cuenta de GitHub."
+            echo ""
+            info "En modo no-interactivo, debes autenticar GitHub CLI antes de ejecutar este script:"
+            echo ""
+            echo "  1. Autentica GitHub CLI manualmente:"
+            echo "     ${CBL}gh auth login${CNC}"
+            echo ""
+            echo "  2. O usa un token de GitHub:"
+            echo "     ${CBL}echo 'tu_token_github' | gh auth login --with-token${CNC}"
+            echo ""
+            echo "  3. Vuelve a ejecutar este script con ${CBL}--auto-upload${CNC}"
+            echo ""
+            exit 1
+        else
+            info "GitHub CLI está instalado pero requiere autenticación para subir llaves."
+            echo ""
+            printf "%b\n" "${CYE}Para habilitar la subida automática en modo no-interactivo:${CNC}"
+            echo ""
+            echo "  1. Autentica GitHub CLI manualmente:"
+            echo "     ${CBL}gh auth login${CNC}"
+            echo ""
+            echo "  2. O usa un token de GitHub:"
+            echo "     ${CBL}echo 'tu_token_github' | gh auth login --with-token${CNC}"
+            echo ""
+            echo "  3. Luego vuelve a ejecutar este script con ${CBL}--auto-upload${CNC}"
+            echo ""
+            warning "Omitiendo subida automática. Las llaves se guardarán localmente."
+            return 1
+        fi
+    fi
+}
+
+show_manual_gh_install_instructions() {
+    local os_type="$1"
+    echo ""
+    printf "%b\n" "${BLD}${CCY}📦 INSTRUCCIONES DE INSTALACIÓN MANUAL:${CNC}"
+    echo ""
+    
+    case "$os_type" in
+        arch|manjaro|endeavouros|garuda)
+            printf "%b\n" "${CYE}Arch Linux / Manjaro:${CNC}"
+            echo "  ${CBL}sudo pacman -S github-cli${CNC}"
+            echo "  ${DIM}o desde AUR:${CNC} ${CBL}yay -S github-cli${CNC}"
+            ;;
+        ubuntu|debian|linuxmint|pop)
+            printf "%b\n" "${CYE}Ubuntu / Debian:${CNC}"
+            echo "  ${CBL}sudo apt update && sudo apt install gh${CNC}"
+            ;;
+        fedora|rhel|centos|rocky|alma)
+            printf "%b\n" "${CYE}Fedora / RHEL / CentOS:${CNC}"
+            echo "  ${CBL}sudo dnf install gh${CNC}"
+            ;;
+        *)
+            printf "%b\n" "${CYE}Instalación genérica:${CNC}"
+            echo "  Visita: ${CBL}https://cli.github.com${CNC}"
+            ;;
+    esac
+    
+    echo ""
+    info "Después de instalar, vuelve a ejecutar este script con ${CBL}--auto-upload${CNC}"
+    echo ""
+}
+
+upload_ssh_key_to_github() {
+    local ssh_key_file="$HOME/.ssh/id_ed25519.pub"
+    if [[ ! -f "$ssh_key_file" ]]; then
+        warning "No se encontró la llave SSH pública para subirla a GitHub."
+        return 1
+    fi
+
+    local title="${SSH_KEY_TITLE:-$(hostname)-$(date +%Y%m%d_%H%M)}"
+    if gh ssh-key add "$ssh_key_file" --title "$title" &>/dev/null; then
+        success "Llave SSH subida a GitHub automáticamente (${title})"
+        SSH_KEY_UPLOADED=true
+        return 0
+    else
+        warning "No se pudo subir la llave SSH automáticamente."
+        return 1
+    fi
+}
+
+upload_gpg_key_to_github() {
+    if [[ -z "$GPG_KEY_ID" ]]; then
+        info "No hay llave GPG nueva para subir."
+        return 1
+    fi
+
+    # Verificar si la llave GPG ya existe en GitHub
+    local existing_keys
+    existing_keys=$(gh gpg-key list 2>/dev/null | grep -i "$GPG_KEY_ID" || true)
+    if [[ -n "$existing_keys" ]]; then
+        info "La llave GPG ${CBL}$GPG_KEY_ID${CNC} ya existe en tu cuenta de GitHub."
+        GPG_KEY_UPLOADED=true
+        return 0
+    fi
+
+    local gpg_temp
+    gpg_temp=$(mktemp)
+    if ! gpg --armor --export "$GPG_KEY_ID" > "$gpg_temp" 2>/dev/null; then
+        warning "No se pudo exportar la llave GPG para subirla a GitHub."
+        rm -f "$gpg_temp"
+        return 1
+    fi
+
+    # Intentar subir la llave GPG y capturar el error real
+    local gh_output
+    local gh_exit_code
+    gh_output=$(gh gpg-key add "$gpg_temp" 2>&1)
+    gh_exit_code=$?
+
+    if [[ $gh_exit_code -eq 0 ]]; then
+        success "Llave GPG subida a GitHub automáticamente"
+        GPG_KEY_UPLOADED=true
+        rm -f "$gpg_temp"
+        return 0
+    else
+        # Verificar si el error es porque la llave ya existe (puede haber cambiado entre la verificación y la subida)
+        if echo "$gh_output" | grep -qi "already exists\|duplicate\|already registered"; then
+            info "La llave GPG ${CBL}$GPG_KEY_ID${CNC} ya existe en tu cuenta de GitHub."
+            GPG_KEY_UPLOADED=true
+            rm -f "$gpg_temp"
+            return 0
+        else
+            warning "No se pudo subir la llave GPG automáticamente."
+            if [[ -n "$gh_output" ]]; then
+                printf "%b\n" "${DIM}Error: ${gh_output}${CNC}"
+            fi
+            rm -f "$gpg_temp"
+            return 1
+        fi
+    fi
+}
+
+maybe_upload_keys() {
+    local should_upload=false
+
+    # Determinar si debemos intentar subir
+    if [[ "$INTERACTIVE_MODE" == "true" ]]; then
+        if [[ "$AUTO_UPLOAD_KEYS" == "true" ]]; then
+            should_upload=true
+        else
+            if ask_yes_no "¿Deseas subir automáticamente las llaves a GitHub usando GitHub CLI?" "y"; then
+                should_upload=true
+            fi
+        fi
+    else
+        # En modo no-interactivo, solo subir si el flag --auto-upload está activo
+        if [[ "$AUTO_UPLOAD_KEYS" == "true" ]]; then
+            should_upload=true
+        else
+            info "El flag --auto-upload no está activo. Omitiendo subida automática."
+            return
+        fi
+    fi
+
+    if [[ "$should_upload" != "true" ]]; then
+        return
+    fi
+
+    # Verificación de seguridad (la verificación principal ya se hizo al inicio)
+    # Solo verificamos que gh siga autenticado, pero no salimos si falla (ya es tarde)
+    if ! ensure_github_cli_ready; then
+        echo ""
+        warning "GitHub CLI no está disponible. No se pudieron subir las llaves automáticamente."
+        info "Las llaves se guardarán localmente para que puedas subirlas manualmente."
+        echo ""
+        return
+    fi
+
+    # Intentar subir llaves
+    echo ""
+    show_separator
+    printf "%b\n" "${BLD}${CGR}🚀 SUBIENDO LLAVES A GITHUB${CNC}"
+    show_separator
+    echo ""
+
+    local ssh_uploaded=false
+    local gpg_uploaded=false
+
+    if upload_ssh_key_to_github; then
+        ssh_uploaded=true
+    fi
+
+    if [[ -n "$GPG_KEY_ID" ]]; then
+        if upload_gpg_key_to_github; then
+            gpg_uploaded=true
+        fi
+    fi
+
+    echo ""
+    show_separator
+    
+    if [[ "$ssh_uploaded" == "true" ]] || [[ "$gpg_uploaded" == "true" ]]; then
+        success "✓ Subida de llaves completada"
+        echo ""
+        if [[ "$ssh_uploaded" == "true" ]]; then
+            info "  • Llave SSH: ${CGR}Subida exitosamente${CNC}"
+        fi
+        if [[ "$gpg_uploaded" == "true" ]]; then
+            info "  • Llave GPG: ${CGR}Subida exitosamente${CNC}"
+        fi
+    else
+        warning "No se pudieron subir las llaves automáticamente"
+        echo ""
+        info "Puedes subirlas manualmente desde:"
+        echo "  ${CBL}https://github.com/settings/ssh/new${CNC} (SSH)"
+        echo "  ${CBL}https://github.com/settings/gpg/new${CNC} (GPG)"
+    fi
+    
+    show_separator
+    echo ""
+}
+
 # Función para test de conectividad
 test_github_connection() {
     show_separator
@@ -1676,32 +2184,62 @@ show_final_instructions() {
     printf "%b\n" "${BLD}${CMA}╚══════════════════════════════════════════════════════════════════════════════╝${CNC}"
     echo ""
 
-    printf "%b\n" "${BLD}${CCY}🔐 PASO 1: AGREGAR LLAVE SSH${CNC}"
-    printf "%b\n" "${DIM}${CNC}   ├─ ${CBL}URL:${CNC} ${BLD}https://github.com/settings/ssh/new${CNC}"
-    printf "%b\n" "${DIM}${CNC}   ├─ ${CBL}Título sugerido:${CNC} $(hostname)-$(date +%Y%m%d)"
-    printf "%b\n" "${DIM}${CNC}   └─ ${CYE}Pega la llave SSH pública que se mostró arriba${CNC}"
-    echo ""
+    if [[ "$SSH_KEY_UPLOADED" == true ]] || [[ "$GPG_KEY_UPLOADED" == true ]]; then
+        info "Subida automática: ${CGR}SSH $( [[ "$SSH_KEY_UPLOADED" == true ]] && echo '✓' || echo '✗' )${CNC}  |  ${CGR}GPG $( [[ "$GPG_KEY_UPLOADED" == true ]] && echo '✓' || echo '✗' )${CNC}"
+        echo ""
+    fi
+
+    # Solo mostrar pasos de agregar llaves si no se subieron automáticamente
+    if [[ "$SSH_KEY_UPLOADED" != true ]]; then
+        printf "%b\n" "${BLD}${CCY}🔐 PASO 1: AGREGAR LLAVE SSH${CNC}"
+        printf "%b\n" "${DIM}${CNC}   ├─ ${CBL}URL:${CNC} ${BLD}https://github.com/settings/ssh/new${CNC}"
+        printf "%b\n" "${DIM}${CNC}   ├─ ${CBL}Título sugerido:${CNC} $(hostname)-$(date +%Y%m%d)"
+        printf "%b\n" "${DIM}${CNC}   └─ ${CYE}Pega la llave SSH pública que se mostró arriba${CNC}"
+        echo ""
+    else
+        printf "%b\n" "${BLD}${CCY}🔐 PASO 1: LLAVE SSH${CNC}"
+        printf "%b\n" "${DIM}${CNC}   └─ ${CGR}✓ Ya agregada automáticamente a tu cuenta de GitHub${CNC}"
+        echo ""
+    fi
     
-    printf "%b\n" "${BLD}${CCY}🔑 PASO 2: AGREGAR LLAVE GPG (Opcional)${CNC}"
-    printf "%b\n" "${DIM}${CNC}   ├─ ${CBL}URL:${CNC} ${BLD}https://github.com/settings/gpg/new${CNC}"
-    printf "%b\n" "${DIM}${CNC}   ├─ ${CYE}Pega la llave GPG pública que se mostró arriba${CNC}"
-    printf "%b\n" "${DIM}${CNC}   └─ ${DIM}Esto permitirá que tus commits aparezcan como 'Verified'${CNC}"
-    echo ""
+    if [[ "$GPG_KEY_UPLOADED" != true ]]; then
+        if [[ -n "$GPG_KEY_ID" ]]; then
+            printf "%b\n" "${BLD}${CCY}🔑 PASO 2: AGREGAR LLAVE GPG (Opcional)${CNC}"
+            printf "%b\n" "${DIM}${CNC}   ├─ ${CBL}URL:${CNC} ${BLD}https://github.com/settings/gpg/new${CNC}"
+            printf "%b\n" "${DIM}${CNC}   ├─ ${CYE}Pega la llave GPG pública que se mostró arriba${CNC}"
+            printf "%b\n" "${DIM}${CNC}   └─ ${DIM}Esto permitirá que tus commits aparezcan como 'Verified'${CNC}"
+            echo ""
+        fi
+    else
+        printf "%b\n" "${BLD}${CCY}🔑 PASO 2: LLAVE GPG${CNC}"
+        printf "%b\n" "${DIM}${CNC}   └─ ${CGR}✓ Ya agregada automáticamente a tu cuenta de GitHub${CNC}"
+        echo ""
+    fi
     
-    printf "%b\n" "${BLD}${CCY}✅ PASO 3: VERIFICAR CONFIGURACIÓN${CNC}"
+    # Ajustar número de paso según si se mostraron los pasos anteriores
+    local paso_num=3
+    if [[ "$SSH_KEY_UPLOADED" == true ]] && [[ "$GPG_KEY_UPLOADED" == true ]]; then
+        paso_num=1
+    elif [[ "$SSH_KEY_UPLOADED" == true ]] || [[ "$GPG_KEY_UPLOADED" == true ]]; then
+        paso_num=2
+    fi
+    
+    printf "%b\n" "${BLD}${CCY}✅ PASO ${paso_num}: VERIFICAR CONFIGURACIÓN${CNC}"
     printf "%b\n" "${DIM}${CNC}   ├─ ${CBL}Probar SSH:${CNC} ${BLD}${CGR}ssh -T git@github.com${CNC}"
     printf "%b\n" "${DIM}${CNC}   │  ${DIM}→ Deberías ver: 'Hi username! You've successfully authenticated...'${CNC}"
     printf "%b\n" "${DIM}${CNC}   └─ ${CBL}Probar GPG:${CNC} ${DIM}Haz un commit y verifica el badge 'Verified' en GitHub${CNC}"
     echo ""
     
-    printf "%b\n" "${BLD}${CCY}📁 PASO 4: ARCHIVOS GENERADOS${CNC}"
+    ((paso_num++))
+    printf "%b\n" "${BLD}${CCY}📁 PASO ${paso_num}: ARCHIVOS GENERADOS${CNC}"
     printf "%b\n" "${DIM}${CNC}   ├─ ${BLD}${CBL}~/.gitconfig${CNC}     ${DIM}→ Configuración profesional de Git${CNC}"
     printf "%b\n" "${DIM}${CNC}   ├─ ${BLD}${CBL}~/.gitmessage${CNC}    ${DIM}→ Plantilla para mensajes de commit${CNC}"
     printf "%b\n" "${DIM}${CNC}   ├─ ${BLD}${CBL}~/.ssh/config${CNC}    ${DIM}→ Configuración SSH optimizada${CNC}"
     printf "%b\n" "${DIM}${CNC}   └─ ${BLD}${CBL}~/.ssh/id_ed25519${CNC} ${DIM}→ Tu llave SSH privada (¡nunca la compartas!)${CNC}"
     echo ""
     
-    printf "%b\n" "${BLD}${CCY}🔐 PASO 5: CREDENTIAL MANAGER${CNC}"
+    ((paso_num++))
+    printf "%b\n" "${BLD}${CCY}🔐 PASO ${paso_num}: CREDENTIAL MANAGER${CNC}"
     printf "%b\n" "${DIM}${CNC}   ├─ ${CGR}✓${CNC} Git Credential Manager configurado"
     printf "%b\n" "${DIM}${CNC}   ├─ ${DIM}No se solicitará contraseña en cada operación${CNC}"
     printf "%b\n" "${DIM}${CNC}   ├─ ${CYE}En el primer push, se abrirá el navegador para autenticar${CNC}"
@@ -1728,12 +2266,44 @@ show_final_instructions() {
 # FUNCION PRINCIPAL
 # =============================================================================
 
-
+# Función para parsear argumentos de línea de comandos
+parse_arguments() {
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --non-interactive)
+                INTERACTIVE_MODE=false
+                shift
+                ;;
+            --auto-upload)
+                AUTO_UPLOAD_KEYS=true
+                shift
+                ;;
+            --help|-h)
+                show_help
+                exit 0
+                ;;
+            *)
+                error "Opción desconocida: $1"
+                echo "Usa --help para ver opciones disponibles"
+                exit 1
+                ;;
+        esac
+    done
+}
 
 main() {
+    # Parsear argumentos de línea de comandos
+    parse_arguments "$@"
     
     initial_checks
     welcome
+    
+    # Verificación temprana de GitHub CLI si --auto-upload está activo
+    if [[ "$AUTO_UPLOAD_KEYS" == "true" ]]; then
+        if ! ensure_github_cli_ready "early"; then
+            exit 1
+        fi
+    fi
     
     # Crear archivo de log
     mkdir -p "$(dirname "$LOG_FILE")"
@@ -1797,6 +2367,7 @@ main() {
 
     # Mostrar llaves generadas
     display_keys
+    maybe_upload_keys
 
     # Guardar llaves en archivos
     if ask_yes_no "¿Deseas guardar las llaves en archivos para referencia futura?"; then
