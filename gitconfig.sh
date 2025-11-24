@@ -1,19 +1,23 @@
 #!/bin/bash
-#  ██████╗ ██╗ ██████╗███████╗    ██╗███╗   ██╗███████╗████████╗ █████╗ ██╗     ██╗     ███████╗██████╗
-#  ██╔══██╗██║██╔════╝██╔════╝    ██║████╗  ██║██╔════╝╚══██╔══╝██╔══██╗██║     ██║     ██╔════╝██╔══██╗
-#  ██████╔╝██║██║     █████╗      ██║██╔██╗ ██║███████╗   ██║   ███████║██║     ██║     █████╗  ██████╔╝
-#  ██╔══██╗██║██║     ██╔══╝      ██║██║╚██╗██║╚════██║   ██║   ██╔══██║██║     ██║     ██╔══╝  ██╔══██╗
-#  ██║  ██║██║╚██████╗███████╗    ██║██║ ╚████║███████║   ██║   ██║  ██║███████╗███████╗███████╗██║  ██║
-#  ╚═╝  ╚═╝╚═╝ ╚═════╝╚══════╝    ╚═╝╚═╝  ╚═══╝╚══════╝   ╚═╝   ╚═╝  ╚═╝╚══════╝╚══════╝╚══════╝╚═╝  ╚═╝
+# =============================================================================
+# Archivo: @gitconfig.sh         (https://github.com/25asab015/github-config)
+# Descripción: Script para configurar Git profesionalmente con SSH y GPG en Linux
+# Autor: 25asab015 <25asab015@ujmd.edu.sv>
+# =============================================================================
 #
-#	Author	-	25asab015
-#	Repo	-	https://github.com/25asab015/dotfiles
-#	Last updated	-	24.03.2025 08:58:16
+# Copyright (C) 2021-2025 25asab015
+# Licenciado bajo la licencia GPL-3.0
 #
-#	gitconfig - Script to configure git
+# Este script realiza:
+#  - Verificación e instalación de dependencias (git, gh, gk, gpg, git-credential-manager)
+#  - Generación y subida de llaves SSH y GPG a GitHub
+#  - Backup y configuración segura de ~/.gitconfig y archivos de llaves
+#  - Integración automática con ssh-agent y portapapeles
+#  - Instalación y preconfiguración de Git Credential Manager
+#  - Mensajes claros multietapa y soporte interactivo/no-interactivo
 #
-# Copyright (C) 2021-2025 25asab015 <25asab015@ujmd.edu.sv>
-# Licensed under GPL-3.0 license
+# Repositorio oficial y documentación:
+#   (https://github.com/25asab015/github-config)
 
 # Colors
 CRE=$(tput setaf 1)    # Red
