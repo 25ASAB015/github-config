@@ -33,6 +33,18 @@ BACKUP_DIR="$SCRIPT_DIR/backup-$(date +%Y%m%d_%H%M%S)"
 LOG_FILE="$SCRIPT_DIR/setup.log"
 DEBUG="${DEBUG:-false}"  # Variable para modo debug
 
+# Definir etapas del proceso para barra de progreso
+declare -A WORKFLOW_STEPS=(
+    [1]="Verificando dependencias"
+    [2]="Configurando directorios"
+    [3]="Backup de llaves existentes"
+    [4]="Recopilando información"
+    [5]="Generando llave SSH"
+    [6]="Generando llave GPG"
+    [7]="Configurando Git"
+    [8]="Configurando SSH agent"
+    [9]="Mostrando resumen"
+)
 
 # =============================================================================
 # FUNCIONES AUXILIARES
@@ -145,6 +157,61 @@ show_spinner() {
     fi
     
     return $exit_code
+}
+
+# Función para detectar soporte Unicode
+check_unicode_support() {
+    # Permitir forzar ASCII con variable de entorno (tiene prioridad)
+    if [[ "${PROGRESS_BAR_ASCII}" == "true" ]] || [[ "${PROGRESS_BAR_ASCII}" == "1" ]]; then
+        return 1
+    fi
+    
+    # Permitir forzar Unicode con variable de entorno
+    if [[ "${PROGRESS_BAR_UNICODE}" == "true" ]] || [[ "${PROGRESS_BAR_UNICODE}" == "1" ]]; then
+        return 0
+    fi
+    
+    # Por defecto, usar ASCII para máxima compatibilidad
+    # Muchos terminales reportan UTF-8 pero no renderizan correctamente los caracteres Unicode
+    return 1
+}
+
+# Función para mostrar barra de progreso visual
+show_progress_bar() {
+    local current=$1
+    local total=$2
+    local step_name="$3"
+    local width=50
+    local percentage=$((current * 100 / total))
+    local filled=$((width * current / total))
+    local empty=$((width - filled))
+    
+    # Detectar soporte Unicode y elegir caracteres apropiados
+    local filled_char="█"
+    local empty_char="░"
+    if ! check_unicode_support; then
+        filled_char="#"
+        empty_char="-"
+    fi
+    
+    # Construir la barra directamente sin usar tr (que puede fallar con Unicode)
+    local filled_bar=""
+    local empty_bar=""
+    local i
+    
+    for ((i=0; i<filled; i++)); do
+        filled_bar="${filled_bar}${filled_char}"
+    done
+    
+    for ((i=0; i<empty; i++)); do
+        empty_bar="${empty_bar}${empty_char}"
+    done
+    
+    printf "\r${BLD}${CCY}[%3d%%]${CNC} ${CGR}%s${CNC}${DIM}%s${CNC} ${CBL}%s${CNC}" \
+           "$percentage" "$filled_bar" "$empty_bar" "$step_name"
+    
+    # Siempre imprimir salto de línea para que los mensajes siguientes no se superpongan
+    echo ""
 }
 
 # Función para detectar el sistema operativo
@@ -1672,47 +1739,66 @@ main() {
     mkdir -p "$(dirname "$LOG_FILE")"
     log "=== INICIO DE CONFIGURACIÓN DE GIT ==="
 
-       # Verificar dependencias
+    # Inicializar variables de progreso
+    TOTAL_STEPS=9
+    CURRENT_STEP=0
+
+    # Verificar dependencias
+    ((CURRENT_STEP++))
+    show_progress_bar $CURRENT_STEP $TOTAL_STEPS "${WORKFLOW_STEPS[$CURRENT_STEP]}"
     if ! check_dependencies; then
         exit 1
     fi
 
     # Configurar directorios
+    ((CURRENT_STEP++))
+    show_progress_bar $CURRENT_STEP $TOTAL_STEPS "${WORKFLOW_STEPS[$CURRENT_STEP]}"
     if ! setup_directories; then
         exit 1
     fi
 
     # Hacer backup de llaves existentes
+    ((CURRENT_STEP++))
+    show_progress_bar $CURRENT_STEP $TOTAL_STEPS "${WORKFLOW_STEPS[$CURRENT_STEP]}"
     backup_existing_keys
 
-
-  # Recopilar información del usuario
+    # Recopilar información del usuario
+    ((CURRENT_STEP++))
+    show_progress_bar $CURRENT_STEP $TOTAL_STEPS "${WORKFLOW_STEPS[$CURRENT_STEP]}"
     if ! collect_user_info; then
         exit 1
     fi
 
     # Generar llave SSH
+    ((CURRENT_STEP++))
+    show_progress_bar $CURRENT_STEP $TOTAL_STEPS "${WORKFLOW_STEPS[$CURRENT_STEP]}"
     if ! generate_ssh_key; then
         exit 1
     fi
 
     # Generar llave GPG
+    ((CURRENT_STEP++))
+    show_progress_bar $CURRENT_STEP $TOTAL_STEPS "${WORKFLOW_STEPS[$CURRENT_STEP]}"
     if ask_yes_no "¿Deseas generar también una llave GPG para firmar commits?"; then
         generate_gpg_key
     fi
 
-     # Configurar Git
+    # Configurar Git
+    ((CURRENT_STEP++))
+    show_progress_bar $CURRENT_STEP $TOTAL_STEPS "${WORKFLOW_STEPS[$CURRENT_STEP]}"
     if ! configure_git; then
         exit 1
     fi
 
- # Crear configuración ssh-agent
+    # Crear configuración ssh-agent
+    ((CURRENT_STEP++))
+    show_progress_bar $CURRENT_STEP $TOTAL_STEPS "${WORKFLOW_STEPS[$CURRENT_STEP]}"
     create_ssh_agent_script
 
-# Mostrar llaves generadas
+    # Mostrar llaves generadas
     display_keys
 
-     # Guardar llaves en archivos
+    # Guardar llaves en archivos
     if ask_yes_no "¿Deseas guardar las llaves en archivos para referencia futura?"; then
         save_keys_to_files
     fi
@@ -1720,7 +1806,9 @@ main() {
     # Probar conectividad
     test_github_connection
 
-     # Mostrar instrucciones finales
+    # Mostrar instrucciones finales
+    ((CURRENT_STEP++))
+    show_progress_bar $CURRENT_STEP $TOTAL_STEPS "${WORKFLOW_STEPS[$CURRENT_STEP]}"
     show_final_instructions
 
     log "=== FIN DE SESIÓN EXITOSA ==="
