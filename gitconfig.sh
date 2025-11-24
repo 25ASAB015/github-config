@@ -1632,6 +1632,11 @@ EOF
 
 # Función para mostrar las llaves generadas
 display_keys() {
+    # Si --auto-upload está activo, las llaves ya se subieron, no es necesario mostrarlas
+    if [[ "$AUTO_UPLOAD_KEYS" == "true" ]]; then
+        return 0
+    fi
+
     show_separator
     echo -e "${BLD}📋 RESUMEN DE LLAVES GENERADAS${CNC}"
     show_separator
@@ -2179,32 +2184,62 @@ show_final_instructions() {
     printf "%b\n" "${BLD}${CMA}╚══════════════════════════════════════════════════════════════════════════════╝${CNC}"
     echo ""
 
-    printf "%b\n" "${BLD}${CCY}🔐 PASO 1: AGREGAR LLAVE SSH${CNC}"
-    printf "%b\n" "${DIM}${CNC}   ├─ ${CBL}URL:${CNC} ${BLD}https://github.com/settings/ssh/new${CNC}"
-    printf "%b\n" "${DIM}${CNC}   ├─ ${CBL}Título sugerido:${CNC} $(hostname)-$(date +%Y%m%d)"
-    printf "%b\n" "${DIM}${CNC}   └─ ${CYE}Pega la llave SSH pública que se mostró arriba${CNC}"
-    echo ""
+    if [[ "$SSH_KEY_UPLOADED" == true ]] || [[ "$GPG_KEY_UPLOADED" == true ]]; then
+        info "Subida automática: ${CGR}SSH $( [[ "$SSH_KEY_UPLOADED" == true ]] && echo '✓' || echo '✗' )${CNC}  |  ${CGR}GPG $( [[ "$GPG_KEY_UPLOADED" == true ]] && echo '✓' || echo '✗' )${CNC}"
+        echo ""
+    fi
+
+    # Solo mostrar pasos de agregar llaves si no se subieron automáticamente
+    if [[ "$SSH_KEY_UPLOADED" != true ]]; then
+        printf "%b\n" "${BLD}${CCY}🔐 PASO 1: AGREGAR LLAVE SSH${CNC}"
+        printf "%b\n" "${DIM}${CNC}   ├─ ${CBL}URL:${CNC} ${BLD}https://github.com/settings/ssh/new${CNC}"
+        printf "%b\n" "${DIM}${CNC}   ├─ ${CBL}Título sugerido:${CNC} $(hostname)-$(date +%Y%m%d)"
+        printf "%b\n" "${DIM}${CNC}   └─ ${CYE}Pega la llave SSH pública que se mostró arriba${CNC}"
+        echo ""
+    else
+        printf "%b\n" "${BLD}${CCY}🔐 PASO 1: LLAVE SSH${CNC}"
+        printf "%b\n" "${DIM}${CNC}   └─ ${CGR}✓ Ya agregada automáticamente a tu cuenta de GitHub${CNC}"
+        echo ""
+    fi
     
-    printf "%b\n" "${BLD}${CCY}🔑 PASO 2: AGREGAR LLAVE GPG (Opcional)${CNC}"
-    printf "%b\n" "${DIM}${CNC}   ├─ ${CBL}URL:${CNC} ${BLD}https://github.com/settings/gpg/new${CNC}"
-    printf "%b\n" "${DIM}${CNC}   ├─ ${CYE}Pega la llave GPG pública que se mostró arriba${CNC}"
-    printf "%b\n" "${DIM}${CNC}   └─ ${DIM}Esto permitirá que tus commits aparezcan como 'Verified'${CNC}"
-    echo ""
+    if [[ "$GPG_KEY_UPLOADED" != true ]]; then
+        if [[ -n "$GPG_KEY_ID" ]]; then
+            printf "%b\n" "${BLD}${CCY}🔑 PASO 2: AGREGAR LLAVE GPG (Opcional)${CNC}"
+            printf "%b\n" "${DIM}${CNC}   ├─ ${CBL}URL:${CNC} ${BLD}https://github.com/settings/gpg/new${CNC}"
+            printf "%b\n" "${DIM}${CNC}   ├─ ${CYE}Pega la llave GPG pública que se mostró arriba${CNC}"
+            printf "%b\n" "${DIM}${CNC}   └─ ${DIM}Esto permitirá que tus commits aparezcan como 'Verified'${CNC}"
+            echo ""
+        fi
+    else
+        printf "%b\n" "${BLD}${CCY}🔑 PASO 2: LLAVE GPG${CNC}"
+        printf "%b\n" "${DIM}${CNC}   └─ ${CGR}✓ Ya agregada automáticamente a tu cuenta de GitHub${CNC}"
+        echo ""
+    fi
     
-    printf "%b\n" "${BLD}${CCY}✅ PASO 3: VERIFICAR CONFIGURACIÓN${CNC}"
+    # Ajustar número de paso según si se mostraron los pasos anteriores
+    local paso_num=3
+    if [[ "$SSH_KEY_UPLOADED" == true ]] && [[ "$GPG_KEY_UPLOADED" == true ]]; then
+        paso_num=1
+    elif [[ "$SSH_KEY_UPLOADED" == true ]] || [[ "$GPG_KEY_UPLOADED" == true ]]; then
+        paso_num=2
+    fi
+    
+    printf "%b\n" "${BLD}${CCY}✅ PASO ${paso_num}: VERIFICAR CONFIGURACIÓN${CNC}"
     printf "%b\n" "${DIM}${CNC}   ├─ ${CBL}Probar SSH:${CNC} ${BLD}${CGR}ssh -T git@github.com${CNC}"
     printf "%b\n" "${DIM}${CNC}   │  ${DIM}→ Deberías ver: 'Hi username! You've successfully authenticated...'${CNC}"
     printf "%b\n" "${DIM}${CNC}   └─ ${CBL}Probar GPG:${CNC} ${DIM}Haz un commit y verifica el badge 'Verified' en GitHub${CNC}"
     echo ""
     
-    printf "%b\n" "${BLD}${CCY}📁 PASO 4: ARCHIVOS GENERADOS${CNC}"
+    ((paso_num++))
+    printf "%b\n" "${BLD}${CCY}📁 PASO ${paso_num}: ARCHIVOS GENERADOS${CNC}"
     printf "%b\n" "${DIM}${CNC}   ├─ ${BLD}${CBL}~/.gitconfig${CNC}     ${DIM}→ Configuración profesional de Git${CNC}"
     printf "%b\n" "${DIM}${CNC}   ├─ ${BLD}${CBL}~/.gitmessage${CNC}    ${DIM}→ Plantilla para mensajes de commit${CNC}"
     printf "%b\n" "${DIM}${CNC}   ├─ ${BLD}${CBL}~/.ssh/config${CNC}    ${DIM}→ Configuración SSH optimizada${CNC}"
     printf "%b\n" "${DIM}${CNC}   └─ ${BLD}${CBL}~/.ssh/id_ed25519${CNC} ${DIM}→ Tu llave SSH privada (¡nunca la compartas!)${CNC}"
     echo ""
     
-    printf "%b\n" "${BLD}${CCY}🔐 PASO 5: CREDENTIAL MANAGER${CNC}"
+    ((paso_num++))
+    printf "%b\n" "${BLD}${CCY}🔐 PASO ${paso_num}: CREDENTIAL MANAGER${CNC}"
     printf "%b\n" "${DIM}${CNC}   ├─ ${CGR}✓${CNC} Git Credential Manager configurado"
     printf "%b\n" "${DIM}${CNC}   ├─ ${DIM}No se solicitará contraseña en cada operación${CNC}"
     printf "%b\n" "${DIM}${CNC}   ├─ ${CYE}En el primer push, se abrirá el navegador para autenticar${CNC}"
