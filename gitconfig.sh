@@ -655,6 +655,15 @@ check_dependencies() {
     done
 
     for dep in "${deps[@]}"; do
+        # Si gh ya se intentó instalar en verificación temprana, omitirlo aquí
+        if [[ "$dep" == "gh" ]] && [[ "$GH_INSTALL_ATTEMPTED" == "true" ]]; then
+            # Verificar si ahora está instalado (puede que se haya instalado en early check)
+            if command -v "$dep" &> /dev/null; then
+                continue  # Está instalado, no agregar a missing
+            fi
+            # Si no está instalado pero ya se intentó, no agregarlo de nuevo
+            continue
+        fi
         if ! command -v "$dep" &> /dev/null; then
             missing_deps+=("$dep")
         fi
