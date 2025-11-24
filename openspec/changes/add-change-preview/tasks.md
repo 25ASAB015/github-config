@@ -1,17 +1,17 @@
 ## 1. Implementation
-- [ ] 1.1 Create `show_changes_summary()` function with formatted output
-- [ ] 1.2 Implement file status detection (create/modify/overwrite) for SSH keys
-- [ ] 1.3 Implement file status detection for `.gitconfig`
-- [ ] 1.4 Implement GPG key generation status display
-- [ ] 1.5 Implement shell config files detection (`.bashrc`, `.zshrc`)
-- [ ] 1.6 Add Git configuration values display section
-- [ ] 1.7 Integrate confirmation prompt using `ask_yes_no()`
-- [ ] 1.8 Add non-interactive mode support (skip preview or auto-confirm)
+- [x] 1.1 Create `show_changes_summary()` function with formatted output
+- [x] 1.2 Implement file status detection (create/modify/overwrite) for SSH keys
+- [x] 1.3 Implement file status detection for `.gitconfig`
+- [x] 1.4 Implement GPG key generation status display
+- [x] 1.5 Implement shell config files detection (`.bashrc`, `.zshrc`)
+- [x] 1.6 Add Git configuration values display section
+- [x] 1.7 Integrate confirmation prompt using `ask_yes_no()`
+- [x] 1.8 Add non-interactive mode support (skip preview or auto-confirm)
 
 ## 2. Integration
-- [ ] 2.1 Call `show_changes_summary()` in `main()` after `collect_user_info()` completes
-- [ ] 2.2 Ensure preview runs before any file modifications or key generation
-- [ ] 2.3 Handle user cancellation gracefully (exit cleanly if user declines)
+- [x] 2.1 Call `show_changes_summary()` in `main()` after `collect_user_info()` completes
+- [x] 2.2 Ensure preview runs before any file modifications or key generation
+- [x] 2.3 Handle user cancellation gracefully (exit cleanly if user declines)
 
 ## 3. Testing
 - [ ] 3.1 Test preview display with new installation (no existing files)
