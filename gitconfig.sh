@@ -1,31 +1,72 @@
 #!/bin/bash
-#  ██████╗ ██╗ ██████╗███████╗    ██╗███╗   ██╗███████╗████████╗ █████╗ ██╗     ██╗     ███████╗██████╗
-#  ██╔══██╗██║██╔════╝██╔════╝    ██║████╗  ██║██╔════╝╚══██╔══╝██╔══██╗██║     ██║     ██╔════╝██╔══██╗
-#  ██████╔╝██║██║     █████╗      ██║██╔██╗ ██║███████╗   ██║   ███████║██║     ██║     █████╗  ██████╔╝
-#  ██╔══██╗██║██║     ██╔══╝      ██║██║╚██╗██║╚════██║   ██║   ██╔══██║██║     ██║     ██╔══╝  ██╔══██╗
-#  ██║  ██║██║╚██████╗███████╗    ██║██║ ╚████║███████║   ██║   ██║  ██║███████╗███████╗███████╗██║  ██║
-#  ╚═╝  ╚═╝╚═╝ ╚═════╝╚══════╝    ╚═╝╚═╝  ╚═══╝╚══════╝   ╚═╝   ╚═╝  ╚═╝╚══════╝╚══════╝╚══════╝╚═╝  ╚═╝
+# =============================================================================
+# Archivo: @gitconfig.sh         (https://github.com/25asab015/github-config)
+# Descripción: Script para configurar Git profesionalmente con SSH y GPG en Linux
+# Autor: 25asab015 <25asab015@ujmd.edu.sv>
+# =============================================================================
 #
-#	Author	-	25asab015
-#	Repo	-	https://github.com/25asab015/dotfiles
-#	Last updated	-	24.03.2025 08:58:16
+# Copyright (C) 2021-2025 25asab015
+# Licenciado bajo la licencia GPL-3.0
 #
-#	gitconfig - Script to configure git
+# Este script realiza:
+#  - Verificación e instalación de dependencias (git, gh, gk, gpg, git-credential-manager)
+#  - Generación y subida de llaves SSH y GPG a GitHub
+#  - Backup y configuración segura de ~/.gitconfig y archivos de llaves
+#  - Integración automática con ssh-agent y portapapeles
+#  - Instalación y preconfiguración de Git Credential Manager
+#  - Mensajes claros multietapa y soporte interactivo/no-interactivo
 #
-# Copyright (C) 2021-2025 25asab015 <25asab015@ujmd.edu.sv>
-# Licensed under GPL-3.0 license
+# Repositorio oficial y documentación:
+#   (https://github.com/25asab015/github-config)
 
-# Colors
-CRE=$(tput setaf 1)    # Red
-CYE=$(tput setaf 3)    # Yellow
-CGR=$(tput setaf 2)    # Green
-CBL=$(tput setaf 4)    # Blue
-CMA=$(tput setaf 5)    # Magenta
-CCY=$(tput setaf 6)    # Cyan
-CWH=$(tput setaf 7)    # White
-BLD=$(tput bold)       # Bold
-DIM=$(tput dim)        # Dim
-CNC=$(tput sgr0)       # Reset colors
+# =============================================================================
+# Color System - Semantic Palette
+# =============================================================================
+# WCAG 2.1 Accessibility: Uses high-contrast colors for terminal output
+# - State colors (success, error, warning, info) follow standard conventions
+# - UI colors (primary, secondary, accent) provide consistent theming
+# - Graceful degradation: returns empty strings when colors unavailable
+# =============================================================================
+
+declare -A COLORS=(
+    # State Colors - Semantic status indicators
+    [success]="$(tput setaf 2 2>/dev/null || echo -n "")"     # Green - success messages
+    [error]="$(tput setaf 1 2>/dev/null || echo -n "")"       # Red - error messages
+    [warning]="$(tput setaf 3 2>/dev/null || echo -n "")"     # Yellow - warnings
+    [info]="$(tput setaf 4 2>/dev/null || echo -n "")"        # Blue - informational messages
+    
+    # UI Element Colors - Consistent theming
+    [primary]="$(tput setaf 6 2>/dev/null || echo -n "")"     # Cyan - primary actions/labels
+    [secondary]="$(tput setaf 5 2>/dev/null || echo -n "")"   # Magenta - secondary elements
+    [accent]="$(tput setaf 3 2>/dev/null || echo -n "")"      # Yellow - highlights/accents
+    [text]="$(tput setaf 7 2>/dev/null || echo -n "")"        # White - standard text
+    
+    # Text Modifiers
+    [muted]="$(tput dim 2>/dev/null || echo -n "")"           # Dim - less important text
+    [bold]="$(tput bold 2>/dev/null || echo -n "")"           # Bold - emphasis
+    
+    # Reset
+    [reset]="$(tput sgr0 2>/dev/null || echo -n "")"          # Reset all attributes
+)
+
+# Color helper function - safely retrieve color codes by token name
+# Usage: $(c success) or $(c bold)
+c() {
+    local token="$1"
+    if [[ -n "${COLORS[$token]}" ]]; then
+        echo -n "${COLORS[$token]}"
+    else
+        # Log warning in debug mode for unknown tokens
+        [[ "$DEBUG" == "true" ]] && echo "Warning: unknown color token '$token'" >&2
+        echo -n ""
+    fi
+}
+
+# Reset helper - restore default terminal colors
+# Usage: $(cr)
+cr() {
+    echo -n "${COLORS[reset]}"
+}
 
 # Configuración global
 SCRIPT_DIR="$HOME/.github-keys-setup"
@@ -67,30 +108,30 @@ log() {
 
 # Función para mostrar separador
 show_separator() {
-    printf "%b\n" "${CBL}─────────────────────────────────────────────────────────────────────────────${CNC}"
+    printf "%b\n" "$(c primary)─────────────────────────────────────────────────────────────────────────────$(cr)"
 }
 
 # Función para mostrar mensajes de éxito
 success() {
-    printf "%b\n" "${BLD}${CGR}✅ $1${CNC}"
+    printf "%b\n" "$(c bold)$(c success)✅ $1$(cr)"
     log "SUCCESS: $1"
 }
 
 # Función para mostrar mensajes de error
 error() {
-    printf "%b\n" "${BLD}${CRE}❌ ERROR: $1${CNC}"
+    printf "%b\n" "$(c bold)$(c error)❌ ERROR: $1$(cr)"
     log "ERROR: $1"
 }
 
 # Función para mostrar advertencias
 warning() {
-    printf "%b\n" "${BLD}${CYE}⚠️  ADVERTENCIA: $1${CNC}"
+    printf "%b\n" "$(c bold)$(c warning)⚠️  ADVERTENCIA: $1$(cr)"
     log "WARNING: $1"
 }
 
 # Función para mostrar información
 info() {
-    printf "%b\n" "${BLD}${CBL}ℹ️  $1${CNC}"
+    printf "%b\n" "$(c bold)$(c info)ℹ️  $1$(cr)"
     log "INFO: $1"
 }
 
@@ -137,12 +178,12 @@ logo() {
     
     # Display each line with animation effect
     for line in "${logo_lines[@]}"; do
-        printf "%b%b%b\n" "${CYE}" "$line" "${CNC}"
+        printf "%b%b%b\n" "$(c accent)" "$line" "$(cr)"
         sleep 0.03
     done
     
     # Display text banner below logo
-    printf "\n   %b%b[ %b%s %b]%b\n\n" "${BLD}" "${CRE}" "${CYE}" "${text}" "${CRE}" "${CNC}"
+    printf "\n   %b%b[ %b%s %b]%b\n\n" "$(c bold)" "$(c error)" "$(c warning)" "${text}" "$(c error)" "$(cr)"
     
     # Restore cursor
     tput cnorm
@@ -166,11 +207,11 @@ show_spinner() {
     local message="$2"
     local spinstr='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
     
-    printf "%b" "${BLD}${CBL}${message}${CNC} "
+    printf "%b" "$(c bold)$(c primary)${message}$(cr) "
     
     while kill -0 "$pid" 2>/dev/null; do
         local temp=${spinstr#?}
-        printf "\r%b %s " "${BLD}${CBL}${message}${CNC}" "${CYE}${spinstr:0:1}${CNC}"
+        printf "\r%b %s " "$(c bold)$(c primary)${message}$(cr)" "$(c accent)${spinstr:0:1}$(cr)"
         spinstr=$temp${spinstr%"$temp"}
         sleep 0.1
     done
@@ -179,9 +220,9 @@ show_spinner() {
     local exit_code=$?
     
     if [ $exit_code -eq 0 ]; then
-        printf "\r%b %s\n" "${BLD}${CBL}${message}${CNC}" "${CGR}✓${CNC}"
+        printf "\r%b %s\n" "$(c bold)$(c primary)${message}$(cr)" "$(c success)✓$(cr)"
     else
-        printf "\r%b %s\n" "${BLD}${CBL}${message}${CNC}" "${CRE}✗${CNC}"
+        printf "\r%b %s\n" "$(c bold)$(c primary)${message}$(cr)" "$(c error)✗$(cr)"
     fi
     
     return $exit_code
@@ -235,7 +276,7 @@ show_progress_bar() {
         empty_bar="${empty_bar}${empty_char}"
     done
     
-    printf "\r${BLD}${CCY}[%3d%%]${CNC} ${CGR}%s${CNC}${DIM}%s${CNC} ${CBL}%s${CNC}" \
+    printf "\r$(c bold)$(c warning)[%3d%%]$(cr) $(c success)%s$(cr)$(c muted)%s$(cr) $(c primary)%s$(cr)" \
            "$percentage" "$filled_bar" "$empty_bar" "$step_name"
     
     # Siempre imprimir salto de línea para que los mensajes siguientes no se superpongan
@@ -308,7 +349,7 @@ auto_install_dependencies() {
                     if [ -z "$retry_failed" ]; then
                         success "Todos los paquetes se instalaron correctamente en el segundo intento"
                     else
-                        error "Los siguientes paquetes no se pudieron instalar:${CYE}$retry_failed${CNC}"
+                        error "Los siguientes paquetes no se pudieron instalar:$(c warning)$retry_failed$(cr)"
                     fi
                 fi
             fi
@@ -328,7 +369,7 @@ auto_install_dependencies() {
                     if [ -z "$aur_failed" ]; then
                         success "Paquetes de AUR instalados correctamente"
                     else
-                        warning "Los siguientes paquetes de AUR fallaron:${CYE}$aur_failed${CNC}"
+                        warning "Los siguientes paquetes de AUR fallaron:$(c warning)$aur_failed$(cr)"
                         retry_failed="$retry_failed$aur_failed"
                     fi
                 elif command -v paru &>/dev/null; then
@@ -344,7 +385,7 @@ auto_install_dependencies() {
                     if [ -z "$aur_failed" ]; then
                         success "Paquetes de AUR instalados correctamente"
                     else
-                        warning "Los siguientes paquetes de AUR fallaron:${CYE}$aur_failed${CNC}"
+                        warning "Los siguientes paquetes de AUR fallaron:$(c warning)$aur_failed$(cr)"
                         retry_failed="$retry_failed$aur_failed"
                     fi
                 else
@@ -388,7 +429,7 @@ auto_install_dependencies() {
                     if [ -z "$retry_failed" ]; then
                         success "Todos los paquetes se instalaron correctamente en el segundo intento"
                     else
-                        error "Los siguientes paquetes no se pudieron instalar:${CYE}$retry_failed${CNC}"
+                        error "Los siguientes paquetes no se pudieron instalar:$(c warning)$retry_failed$(cr)"
                     fi
                 fi
             else
@@ -425,7 +466,7 @@ auto_install_dependencies() {
                 if [ -z "$retry_failed" ]; then
                     success "Todos los paquetes se instalaron correctamente en el segundo intento"
                 else
-                    error "Los siguientes paquetes no se pudieron instalar:${CYE}$retry_failed${CNC}"
+                    error "Los siguientes paquetes no se pudieron instalar:$(c warning)$retry_failed$(cr)"
                 fi
             fi
             ;;
@@ -442,9 +483,9 @@ auto_install_dependencies() {
     if [ -n "$retry_failed" ]; then
         echo ""
         error "No se pudieron instalar los siguientes paquetes después de dos intentos:"
-        printf "%b\n" "${BLD}${CYE}$retry_failed${CNC}"
+        printf "%b\n" "$(c bold)$(c warning)$retry_failed$(cr)"
         echo ""
-        info "Creando archivo ${CBL}$missing_file${CNC} con la lista de paquetes fallidos..."
+        info "Creando archivo $(c primary)$missing_file$(cr) con la lista de paquetes fallidos..."
         
         {
             echo "# Paquetes que no se pudieron instalar"
@@ -460,7 +501,7 @@ auto_install_dependencies() {
             echo "Por favor, instala estos paquetes manualmente."
         } > "$missing_file"
         
-        success "Archivo creado: ${CBL}$missing_file${CNC}"
+        success "Archivo creado: $(c primary)$missing_file$(cr)"
         echo ""
         warning "Revisa el archivo para instalar manualmente los paquetes faltantes"
         sleep 3
@@ -478,28 +519,28 @@ welcome() {
     clear
     logo "GitHub Configuración – $USER"
 
-    printf "%b" "${BLD}${CGR}Este script te ayudará a dejar lista tu configuración de Git y GitHub:${CNC}
+    printf "%b" "$(c bold)$(c success)Este script te ayudará a dejar lista tu configuración de Git y GitHub:$(cr)
 
-  ${BLD}${CGR}[${CYE}i${CGR}]${CNC} Generar y/o registrar tu clave SSH para GitHub
-  ${BLD}${CGR}[${CYE}i${CGR}]${CNC} Generar una clave GPG para firmar tus commits
-  ${BLD}${CGR}[${CYE}i${CGR}]${CNC} Configurar tu archivo ${CBL}.gitconfig${CNC} con nombre, email y preferencias recomendadas
-  ${BLD}${CGR}[${CYE}i${CGR}]${CNC} Instalar y/o autenticar ${CBL}GitHub CLI (gh)${CNC}
-  ${BLD}${CGR}[${CYE}i${CGR}]${CNC} Instalar y configurar ${CBL}GitKraken CLI (gk)${CNC}
+  $(c bold)$(c success)[$(c warning)i$(c success)]$(cr) Generar y/o registrar tu clave SSH para GitHub
+  $(c bold)$(c success)[$(c warning)i$(c success)]$(cr) Generar una clave GPG para firmar tus commits
+  $(c bold)$(c success)[$(c warning)i$(c success)]$(cr) Configurar tu archivo $(c primary).gitconfig$(cr) con nombre, email y preferencias recomendadas
+  $(c bold)$(c success)[$(c warning)i$(c success)]$(cr) Instalar y/o autenticar $(c primary)GitHub CLI (gh)$(cr)
+  $(c bold)$(c success)[$(c warning)i$(c success)]$(cr) Instalar y configurar $(c primary)GitKraken CLI (gk)$(cr)
 
-${BLD}${CGR}[${CRE}!${CGR}]${CNC} ${BLD}${CRE}Este script NO realiza cambios peligrosos en tu sistema${CNC}
-${BLD}${CGR}[${CRE}!${CGR}]${CNC} ${BLD}${CRE}Solo edita configuraciones relacionadas a Git y GitHub en tu usuario${CNC}
+$(c bold)$(c success)[$(c error)!$(c success)]$(cr) $(c bold)$(c error)Este script NO realiza cambios peligrosos en tu sistema$(cr)
+$(c bold)$(c success)[$(c error)!$(c success)]$(cr) $(c bold)$(c error)Solo edita configuraciones relacionadas a Git y GitHub en tu usuario$(cr)
 
 "
 
     # Mostrar información sobre modo no-interactivo si está activo
     if [[ "$INTERACTIVE_MODE" == "false" ]]; then
         echo ""
-        printf "%b\n" "${BLD}${CCY}ℹ️  MODO NO-INTERACTIVO ACTIVO${CNC}"
+        printf "%b\n" "$(c bold)$(c accent)ℹ️  MODO NO-INTERACTIVO ACTIVO$(cr)"
         if [[ -n "$USER_EMAIL" ]] && [[ -n "$USER_NAME" ]]; then
-            printf "%b\n" "${DIM}   Usando: ${CBL}USER_EMAIL=${USER_EMAIL}${DIM}, ${CBL}USER_NAME=${USER_NAME}${CNC}"
+            printf "%b\n" "$(c muted)   Usando: $(c primary)USER_EMAIL=${USER_EMAIL}$(c muted), $(c primary)USER_NAME=${USER_NAME}$(cr)"
         else
-            printf "%b\n" "${CYE}   ⚠️  ADVERTENCIA: USER_EMAIL y USER_NAME deben estar definidos${CNC}"
-            printf "%b\n" "${DIM}   Ejemplo: ${CBL}USER_EMAIL=\"tu@email.com\" USER_NAME=\"Tu Nombre\" ./gitconfig.sh --non-interactive${CNC}"
+            printf "%b\n" "$(c warning)   ⚠️  ADVERTENCIA: USER_EMAIL y USER_NAME deben estar definidos$(cr)"
+            printf "%b\n" "$(c muted)   Ejemplo: $(c primary)USER_EMAIL=\"tu@email.com\" USER_NAME=\"Tu Nombre\" ./gitconfig.sh --non-interactive$(cr)"
         fi
         echo ""
     fi
@@ -509,37 +550,37 @@ ${BLD}${CGR}[${CRE}!${CGR}]${CNC} ${BLD}${CRE}Solo edita configuraciones relacio
 
 # Función para mostrar ayuda
 show_help() {
-    printf "%b\n" "${BLD}${CMA}╔══════════════════════════════════════════════════════════════════════════════╗${CNC}"
-    printf "%b\n" "${BLD}${CMA}║${CNC}  ${BLD}${CWH}                    GITCONFIG.SH - CONFIGURADOR DE GIT                        ${CNC}${BLD}${CMA}║${CNC}"
-    printf "%b\n" "${BLD}${CMA}╚══════════════════════════════════════════════════════════════════════════════╝${CNC}"
-    printf "%b\n" "${BLD}${CCY}📋 DESCRIPCIÓN:${CNC} ${DIM}Script interactivo para configurar Git, SSH, GPG y GitHub CLI${CNC}"
-    printf "%b\n" "${BLD}${CCY}🚀 USO:${CNC} ${CBL}./gitconfig.sh${CNC} ${DIM}[OPCIONES]${CNC}"
+    printf "%b\n" "$(c bold)$(c secondary)╔══════════════════════════════════════════════════════════════════════════════╗$(cr)"
+    printf "%b\n" "$(c bold)$(c secondary)║$(cr)  $(c bold)$(c text)                    GITCONFIG.SH - CONFIGURADOR DE GIT                        $(cr)$(c bold)$(c secondary)║$(cr)"
+    printf "%b\n" "$(c bold)$(c secondary)╚══════════════════════════════════════════════════════════════════════════════╝$(cr)"
+    printf "%b\n" "$(c bold)$(c accent)📋 DESCRIPCIÓN:$(cr) $(c muted)Script interactivo para configurar Git, SSH, GPG y GitHub CLI$(cr)"
+    printf "%b\n" "$(c bold)$(c accent)🚀 USO:$(cr) $(c primary)./gitconfig.sh$(cr) $(c muted)[OPCIONES]$(cr)"
     echo ""
-    printf "%b\n" "${BLD}${CCY}⚙️  OPCIONES:${CNC}"
-    printf "%b\n" "   ${CGR}-h, --help${CNC}              ${DIM}Mostrar esta ayuda${CNC}"
-    printf "%b\n" "   ${CGR}--non-interactive${CNC}        ${DIM}Modo no-interactivo (requiere USER_EMAIL y USER_NAME)${CNC}"
-    printf "%b\n" "   ${CGR}--auto-upload${CNC}            ${DIM}Subir llaves a GitHub usando gh CLI (requiere autenticación previa)${CNC}"
+    printf "%b\n" "$(c bold)$(c accent)⚙️  OPCIONES:$(cr)"
+    printf "%b\n" "   $(c success)-h, --help$(cr)              $(c muted)Mostrar esta ayuda$(cr)"
+    printf "%b\n" "   $(c success)--non-interactive$(cr)        $(c muted)Modo no-interactivo (requiere USER_EMAIL y USER_NAME)$(cr)"
+    printf "%b\n" "   $(c success)--auto-upload$(cr)            $(c muted)Subir llaves a GitHub usando gh CLI (requiere autenticación previa)$(cr)"
     echo ""
-    printf "%b\n" "${BLD}${CCY}🔧 VARIABLES DE ENTORNO:${CNC}"
-    printf "%b\n" "   ${CBL}INTERACTIVE_MODE${CNC}         ${DIM}true|false${CNC} ${CYE}(default: true)${CNC} - Controla si el script espera entrada del usuario${CNC}"
-    printf "%b\n" "   ${CBL}USER_EMAIL${CNC} ${CYE}(requerido en modo no-interactivo)${CNC} - Email de GitHub para configurar Git${CNC}"
-    printf "%b\n" "   ${CBL}USER_NAME${CNC} ${CYE}(requerido en modo no-interactivo)${CNC} - Nombre completo para configurar Git${CNC}"
+    printf "%b\n" "$(c bold)$(c accent)🔧 VARIABLES DE ENTORNO:$(cr)"
+    printf "%b\n" "   $(c primary)INTERACTIVE_MODE$(cr)         $(c muted)true|false$(cr) $(c warning)(default: true)$(cr) - Controla si el script espera entrada del usuario$(cr)"
+    printf "%b\n" "   $(c primary)USER_EMAIL$(cr) $(c warning)(requerido en modo no-interactivo)$(cr) - Email de GitHub para configurar Git$(cr)"
+    printf "%b\n" "   $(c primary)USER_NAME$(cr) $(c warning)(requerido en modo no-interactivo)$(cr) - Nombre completo para configurar Git$(cr)"
     echo ""
-    printf "%b\n" "${BLD}${CCY}💡 EJEMPLOS:${CNC}"
-    printf "%b\n" "   ${DIM}# Interactivo:${CNC} ${CGR}./gitconfig.sh${CNC}"
-    printf "%b\n" "   ${DIM}# No-interactivo (requiere variables):${CNC}"
-    printf "%b\n" "   ${CGR}USER_EMAIL=\"tu@email.com\" USER_NAME=\"Tu Nombre\" ./gitconfig.sh --non-interactive${CNC}"
-    printf "%b\n" "   ${DIM}# No-interactivo + auto-upload:${CNC}"
-    printf "%b\n" "   ${CGR}USER_EMAIL=\"tu@email.com\" USER_NAME=\"Tu Nombre\" ./gitconfig.sh --non-interactive --auto-upload${CNC}"
+    printf "%b\n" "$(c bold)$(c accent)💡 EJEMPLOS:$(cr)"
+    printf "%b\n" "   $(c muted)# Interactivo:$(cr) $(c success)./gitconfig.sh$(cr)"
+    printf "%b\n" "   $(c muted)# No-interactivo (requiere variables):$(cr)"
+    printf "%b\n" "   $(c success)USER_EMAIL=\"tu@email.com\" USER_NAME=\"Tu Nombre\" ./gitconfig.sh --non-interactive$(cr)"
+    printf "%b\n" "   $(c muted)# No-interactivo + auto-upload:$(cr)"
+    printf "%b\n" "   $(c success)USER_EMAIL=\"tu@email.com\" USER_NAME=\"Tu Nombre\" ./gitconfig.sh --non-interactive --auto-upload$(cr)"
     echo ""
-    printf "%b\n" "${BLD}${CCY}⚠️  NOTAS IMPORTANTES:${CNC}"
-    printf "%b\n" "   ${CYE}•${CNC} ${DIM}En modo no-interactivo, ${CBL}USER_EMAIL${DIM} y ${CBL}USER_NAME${DIM} son ${CRE}OBLIGATORIOS${DIM}${CNC}"
-    printf "%b\n" "   ${CYE}•${CNC} ${DIM}Las preguntas sí/no usan sus valores por defecto (no existe auto-confirmación de 'sí')${CNC}"
-    printf "%b\n" "   ${CYE}•${CNC} ${DIM}Las respuestas automáticas se registran en el archivo de log${CNC}"
-    printf "%b\n" "   ${CYE}•${CNC} ${DIM}El modo interactivo es el comportamiento por defecto${CNC}"
-    printf "%b\n" "   ${CYE}•${CNC} ${DIM}Archivo de log: ${CBL}~/.github-keys-setup/setup.log${CNC}${DIM}${CNC}"
+    printf "%b\n" "$(c bold)$(c accent)⚠️  NOTAS IMPORTANTES:$(cr)"
+    printf "%b\n" "   $(c warning)•$(cr) $(c muted)En modo no-interactivo, $(c primary)USER_EMAIL$(c muted) y $(c primary)USER_NAME$(c muted) son $(c error)OBLIGATORIOS$(c muted)$(cr)"
+    printf "%b\n" "   $(c warning)•$(cr) $(c muted)Las preguntas sí/no usan sus valores por defecto (no existe auto-confirmación de 'sí')$(cr)"
+    printf "%b\n" "   $(c warning)•$(cr) $(c muted)Las respuestas automáticas se registran en el archivo de log$(cr)"
+    printf "%b\n" "   $(c warning)•$(cr) $(c muted)El modo interactivo es el comportamiento por defecto$(cr)"
+    printf "%b\n" "   $(c warning)•$(cr) $(c muted)Archivo de log: $(c primary)~/.github-keys-setup/setup.log$(cr)$(c muted)$(cr)"
     show_separator
-    printf "%b\n" "${DIM}AUTOR:${CNC} ${CBL}25asab015${CNC} ${DIM}<25asab015@ujmd.edu.sv>${CNC}  ${DIM}│${CNC}  ${DIM}LICENCIA:${CNC} ${CBL}GPL-3.0${CNC}"
+    printf "%b\n" "$(c muted)AUTOR:$(cr) $(c primary)25asab015$(cr) $(c muted)<25asab015@ujmd.edu.sv>$(cr)  $(c muted)│$(cr)  $(c muted)LICENCIA:$(cr) $(c primary)GPL-3.0$(cr)"
 }
 
 # Función para preguntar sí/no con valor por defecto
@@ -558,9 +599,9 @@ ask_yes_no() {
 
     while true; do
         if [ "$default" = "y" ]; then
-            printf " %b" "${BLD}${CGR}${prompt}${CNC} [Y/n]: "
+            printf " %b" "$(c bold)$(c success)${prompt}$(cr) [Y/n]: "
         else
-            printf " %b" "${BLD}${CGR}${prompt}${CNC} [y/N]: "
+            printf " %b" "$(c bold)$(c success)${prompt}$(cr) [y/N]: "
         fi
 
         read -r response
@@ -571,14 +612,14 @@ ask_yes_no() {
                 return 0 ;;
             [Nn]|no)
                 if [ "$exit_on_no" = "true" ]; then
-                    printf "\n%b\n" "${BLD}${CYE}Operación cancelada${CNC}"
+                    printf "\n%b\n" "$(c bold)$(c warning)Operación cancelada$(cr)"
                     exit 0
                 else
                     return 1
                 fi
                 ;;
             *)
-                printf "\n%b\n\n" "${BLD}${CRE}Error:${CNC} Solo escribe '${BLD}${CYE}s${CNC}', '${BLD}${CYE}n${CNC}', '${BLD}${CYE}y${CNC}' o '${BLD}${CYE}N${CNC}'" ;;
+                printf "\n%b\n\n" "$(c bold)$(c error)Error:$(cr) Solo escribe '$(c bold)$(c warning)s$(cr)', '$(c bold)$(c warning)n$(cr)', '$(c bold)$(c warning)y$(cr)' o '$(c bold)$(c warning)N$(cr)'" ;;
         esac
     done
 }
@@ -620,7 +661,7 @@ copy_to_clipboard() {
         method_name="pbcopy (macOS)"
     else
         error "No se encontró ninguna herramienta de portapapeles instalada"
-        info "Instala una de estas: ${CBL}xsel${CNC}, ${CBL}xclip${CNC} (X11), ${CBL}wl-clipboard${CNC} (Wayland)"
+        info "Instala una de estas: $(c primary)xsel$(cr), $(c primary)xclip$(cr) (X11), $(c primary)wl-clipboard$(cr) (Wayland)"
         return 1
     fi
     
@@ -699,9 +740,9 @@ check_dependencies() {
         error "Faltan las siguientes dependencias:"
         for dep in "${missing_deps[@]}"; do
             if [[ "$dep" == *"|"* ]]; then
-                printf "%b\n" "  ${BLD}${CRE}• Una herramienta de portapapeles: ${CYE}${dep}${CNC}"
+                printf "%b\n" "  $(c bold)$(c error)• Una herramienta de portapapeles: $(c warning)${dep}$(cr)"
             else
-                printf "%b\n" "  ${BLD}${CRE}• $dep${CNC}"
+                printf "%b\n" "  $(c bold)$(c error)• $dep$(cr)"
             fi
         done
 
@@ -803,14 +844,14 @@ check_dependencies() {
                     warning "Sistema operativo no soportado para instalación automática: $os_type"
                     echo ""
                     info "Comandos de instalación manual:"
-                    printf "%b\n" "${BLD}${CYE}Arch Linux:${CNC}    ${CGR}sudo pacman -S --noconfirm${arch_pkgs}${CNC}"
+                    printf "%b\n" "$(c bold)$(c warning)Arch Linux:$(cr)    $(c success)sudo pacman -S --noconfirm${arch_pkgs}$(cr)"
                     if [[ "$arch_pkgs" == *"gitkraken-cli"* ]] || [[ "$arch_pkgs" == *"git-credential-manager-bin"* ]]; then
-                        printf "%b\n" "${BLD}${CYE}Arch Linux (AUR):${CNC} ${CGR}yay -S --noconfirm${arch_pkgs}${CNC}"
+                        printf "%b\n" "$(c bold)$(c warning)Arch Linux (AUR):$(cr) $(c success)yay -S --noconfirm${arch_pkgs}$(cr)"
                     fi
-                    printf "%b\n" "${BLD}${CYE}Ubuntu/Debian:${CNC} ${CGR}sudo apt update && sudo apt install -y${debian_pkgs}${CNC}"
-                    printf "%b\n" "${BLD}${CYE}CentOS/RHEL:${CNC}   ${CGR}sudo yum install -y${centos_pkgs}${CNC}"
-                    printf "%b\n" "${BLD}${CYE}Fedora:${CNC}        ${CGR}sudo dnf install -y${fedora_pkgs}${CNC}"
-                    printf "%b\n" "${BLD}${CYE}macOS:${CNC}         ${CGR}brew install${brew_pkgs}${CNC}"
+                    printf "%b\n" "$(c bold)$(c warning)Ubuntu/Debian:$(cr) $(c success)sudo apt update && sudo apt install -y${debian_pkgs}$(cr)"
+                    printf "%b\n" "$(c bold)$(c warning)CentOS/RHEL:$(cr)   $(c success)sudo yum install -y${centos_pkgs}$(cr)"
+                    printf "%b\n" "$(c bold)$(c warning)Fedora:$(cr)        $(c success)sudo dnf install -y${fedora_pkgs}$(cr)"
+                    printf "%b\n" "$(c bold)$(c warning)macOS:$(cr)         $(c success)brew install${brew_pkgs}$(cr)"
                     echo ""
                     return 1
                     ;;
@@ -885,7 +926,7 @@ backup_existing_keys() {
                 fi
             done
             
-            success "Backup completado en: ${CBL}$BACKUP_DIR${CNC}"
+            success "Backup completado en: $(c primary)$BACKUP_DIR$(cr)"
         else
             info "Continuando sin hacer backup (las llaves existentes se sobrescribirán)"
         fi
@@ -900,7 +941,7 @@ backup_existing_keys() {
 # Función para recopilar información del usuario
 collect_user_info() {
     show_separator
-    echo -e "${BLD}📝 INFORMACIÓN DEL USUARIO${CNC}"
+    echo -e "$(c bold)📝 INFORMACIÓN DEL USUARIO$(cr)"
     show_separator
 
     # Modo no-interactivo: usar variables de entorno
@@ -909,7 +950,7 @@ collect_user_info() {
             error "USER_EMAIL no está definido. Requerido en modo no-interactivo."
             echo ""
             info "Ejemplo de uso:"
-            printf "%b\n" "${CBL}USER_EMAIL=\"tu@email.com\" USER_NAME=\"Tu Nombre\" ./gitconfig.sh --non-interactive${CNC}"
+            printf "%b\n" "$(c primary)USER_EMAIL=\"tu@email.com\" USER_NAME=\"Tu Nombre\" ./gitconfig.sh --non-interactive$(cr)"
             return 1
         fi
         
@@ -922,7 +963,7 @@ collect_user_info() {
             error "USER_NAME no está definido. Requerido en modo no-interactivo."
             echo ""
             info "Ejemplo de uso:"
-            printf "%b\n" "${CBL}USER_EMAIL=\"tu@email.com\" USER_NAME=\"Tu Nombre\" ./gitconfig.sh --non-interactive${CNC}"
+            printf "%b\n" "$(c primary)USER_EMAIL=\"tu@email.com\" USER_NAME=\"Tu Nombre\" ./gitconfig.sh --non-interactive$(cr)"
             return 1
         fi
         
@@ -935,7 +976,7 @@ collect_user_info() {
 
     # Modo interactivo: pedir información
     while true; do
-        echo -ne "${CBL}Ingresa tu email de GitHub: ${CNC}"
+        echo -ne "$(c primary)Ingresa tu email de GitHub: $(cr)"
         read -r USER_EMAIL
 
         if [[ -z "$USER_EMAIL" ]]; then
@@ -951,7 +992,7 @@ collect_user_info() {
     done
 
     while true; do
-        echo -ne "${CBL}Ingresa tu nombre completo para Git: ${CNC}"
+        echo -ne "$(c primary)Ingresa tu nombre completo para Git: $(cr)"
         read -r USER_NAME
 
         if [[ -n "$USER_NAME" ]]; then
@@ -972,28 +1013,28 @@ show_changes_summary() {
     echo ""
     echo ""
     show_separator
-    printf "%b\n" "${BLD}${CMA}╔══════════════════════════════════════════════════════════════════════════════╗${CNC}"
-    printf "%b\n" "${BLD}${CMA}║${CNC}  ${BLD}${CWH}📋  RESUMEN DE CAMBIOS A REALIZAR${CNC}                                        ${BLD}${CMA}║${CNC}"
-    printf "%b\n" "${BLD}${CMA}╚══════════════════════════════════════════════════════════════════════════════╝${CNC}"
+    printf "%b\n" "$(c bold)$(c secondary)╔══════════════════════════════════════════════════════════════════════════════╗$(cr)"
+    printf "%b\n" "$(c bold)$(c secondary)║$(cr)  $(c bold)$(c text)📋  RESUMEN DE CAMBIOS A REALIZAR$(cr)                                        $(c bold)$(c secondary)║$(cr)"
+    printf "%b\n" "$(c bold)$(c secondary)╚══════════════════════════════════════════════════════════════════════════════╝$(cr)"
     echo ""
     
-    printf "%b\n" "${BLD}${CCY}🔧 Archivos que se crearán/modificarán:${CNC}"
+    printf "%b\n" "$(c bold)$(c accent)🔧 Archivos que se crearán/modificarán:$(cr)"
     echo ""
     
     # SSH keys
     if [[ ! -f "$HOME/.ssh/id_ed25519" ]]; then
-        printf "  ${CGR}[CREAR]${CNC}    ~/.ssh/id_ed25519\n"
-        printf "  ${CGR}[CREAR]${CNC}    ~/.ssh/id_ed25519.pub\n"
+        printf "  $(c success)[CREAR]$(cr)    ~/.ssh/id_ed25519\n"
+        printf "  $(c success)[CREAR]$(cr)    ~/.ssh/id_ed25519.pub\n"
     else
-        printf "  ${CYE}[SOBRESCRIBIR]${CNC} ~/.ssh/id_ed25519\n"
-        printf "  ${CYE}[SOBRESCRIBIR]${CNC} ~/.ssh/id_ed25519.pub\n"
+        printf "  $(c warning)[SOBRESCRIBIR]$(cr) ~/.ssh/id_ed25519\n"
+        printf "  $(c warning)[SOBRESCRIBIR]$(cr) ~/.ssh/id_ed25519.pub\n"
     fi
     
     # .gitconfig
     if [[ -f "$HOME/.gitconfig" ]]; then
-        printf "  ${CYE}[MODIFICAR]${CNC} ~/.gitconfig ${DIM}(backup: ~/.gitconfig.backup-*)${CNC}\n"
+        printf "  $(c warning)[MODIFICAR]$(cr) ~/.gitconfig $(c muted)(backup: ~/.gitconfig.backup-*)$(cr)\n"
     else
-        printf "  ${CGR}[CREAR]${CNC}    ~/.gitconfig\n"
+        printf "  $(c success)[CREAR]$(cr)    ~/.gitconfig\n"
     fi
     
     # GPG key
@@ -1005,18 +1046,18 @@ show_changes_summary() {
         fi
         
         if [[ -n "$existing_gpg_key_id" ]]; then
-            printf "  ${CYE}[USAR EXISTENTE]${CNC} Llave GPG (ID: ${existing_gpg_key_id})\n"
+            printf "  $(c warning)[USAR EXISTENTE]$(cr) Llave GPG (ID: ${existing_gpg_key_id})\n"
         else
-            printf "  ${CGR}[CREAR]${CNC}    Llave GPG (4096-bit RSA)\n"
+            printf "  $(c success)[CREAR]$(cr)    Llave GPG (4096-bit RSA)\n"
         fi
     fi
     
     # Shell configs
-    printf "  ${CYE}[MODIFICAR]${CNC} ~/.bashrc ${DIM}(agregar configuración SSH agent)${CNC}\n"
-    [[ -f "$HOME/.zshrc" ]] && printf "  ${CYE}[MODIFICAR]${CNC} ~/.zshrc ${DIM}(agregar configuración SSH agent)${CNC}\n"
+    printf "  $(c warning)[MODIFICAR]$(cr) ~/.bashrc $(c muted)(agregar configuración SSH agent)$(cr)\n"
+    [[ -f "$HOME/.zshrc" ]] && printf "  $(c warning)[MODIFICAR]$(cr) ~/.zshrc $(c muted)(agregar configuración SSH agent)$(cr)\n"
     
     echo ""
-    printf "%b\n" "${BLD}${CCY}📦 Configuración Git:${CNC}"
+    printf "%b\n" "$(c bold)$(c accent)📦 Configuración Git:$(cr)"
     echo ""
     
     # Determinar credential helper (misma lógica que generate_gitconfig)
@@ -1038,34 +1079,34 @@ show_changes_summary() {
             ;;
     esac
     
-    printf "  ${CBL}Nombre:${CNC}        $USER_NAME\n"
-    printf "  ${CBL}Email:${CNC}         $USER_EMAIL\n"
-    printf "  ${CBL}Rama default:${CNC}  master\n"
+    printf "  $(c primary)Nombre:$(cr)        $USER_NAME\n"
+    printf "  $(c primary)Email:$(cr)         $USER_EMAIL\n"
+    printf "  $(c primary)Rama default:$(cr)  master\n"
     if [[ "$GENERATE_GPG" == "true" ]]; then
         if [[ -n "$GPG_KEY_ID" ]]; then
-            printf "  ${CBL}GPG signing:${CNC}   ${CGR}true${CNC} ${DIM}(usando llave existente: ${GPG_KEY_ID})${CNC}\n"
+            printf "  $(c primary)GPG signing:$(cr)   $(c success)true$(cr) $(c muted)(usando llave existente: ${GPG_KEY_ID})$(cr)\n"
         else
-            printf "  ${CBL}GPG signing:${CNC}   ${CGR}true${CNC} ${DIM}(se generará nueva llave)${CNC}\n"
+            printf "  $(c primary)GPG signing:$(cr)   $(c success)true$(cr) $(c muted)(se generará nueva llave)$(cr)\n"
         fi
     else
-        printf "  ${CBL}GPG signing:${CNC}   ${CYE}false${CNC}\n"
+        printf "  $(c primary)GPG signing:$(cr)   $(c warning)false$(cr)\n"
     fi
-    printf "  ${CBL}Credential:${CNC}    $credential_helper\n"
+    printf "  $(c primary)Credential:$(cr)    $credential_helper\n"
     
     echo ""
-    printf "%b\n" "${BLD}${CCY}📝 Notas importantes:${CNC}"
+    printf "%b\n" "$(c bold)$(c accent)📝 Notas importantes:$(cr)"
     echo ""
     if [[ -f "$HOME/.gitconfig" ]]; then
-        printf "  ${DIM}•${CNC} Se creará un backup de tu ${CBL}.gitconfig${CNC} actual antes de modificarlo\n"
+        printf "  $(c muted)•$(cr) Se creará un backup de tu $(c primary).gitconfig$(cr) actual antes de modificarlo\n"
     fi
     if [[ -f "$HOME/.ssh/id_ed25519" ]]; then
-        printf "  ${DIM}•${CNC} Las llaves SSH existentes serán ${CYE}sobrescritas${CNC}\n"
+        printf "  $(c muted)•$(cr) Las llaves SSH existentes serán $(c warning)sobrescritas$(cr)\n"
     fi
     if [[ "$GENERATE_GPG" == "true" ]] && [[ -n "$GPG_KEY_ID" ]]; then
-        printf "  ${DIM}•${CNC} Se usará tu llave GPG existente ${CBL}($GPG_KEY_ID)${CNC}\n"
+        printf "  $(c muted)•$(cr) Se usará tu llave GPG existente $(c primary)($GPG_KEY_ID)$(cr)\n"
     fi
     if [[ "$AUTO_UPLOAD_KEYS" == "true" ]]; then
-        printf "  ${DIM}•${CNC} Las llaves se subirán automáticamente a GitHub ${CGR}(--auto-upload activo)${CNC}\n"
+        printf "  $(c muted)•$(cr) Las llaves se subirán automáticamente a GitHub $(c success)(--auto-upload activo)$(cr)\n"
     fi
     echo ""
     show_separator
@@ -1087,7 +1128,7 @@ show_changes_summary() {
 # Función para generar llave SSH
 generate_ssh_key() {
     show_separator
-    echo -e "${BLD}🔑 GENERACIÓN DE LLAVE SSH${CNC}"
+    echo -e "$(c bold)🔑 GENERACIÓN DE LLAVE SSH$(cr)"
     show_separator
 
     info "Generando llave SSH Ed25519 (recomendada por GitHub)..."
@@ -1130,7 +1171,7 @@ generate_ssh_key() {
 # Función para generar llave GPG
 generate_gpg_key() {
     show_separator
-    printf "%b\n" "${BLD}${CWH}🔐 GENERACIÓN DE LLAVE GPG${CNC}"
+    printf "%b\n" "$(c bold)$(c text)🔐 GENERACIÓN DE LLAVE GPG$(cr)"
     show_separator
 
     info "Verificando configuración de GPG..."
@@ -1183,7 +1224,7 @@ EOF
     
     # Mostrar contenido del archivo de configuración para debug
     if [[ "$DEBUG" == "true" ]]; then
-        printf "%b\n" "${CYE}Contenido del archivo de configuración GPG:${CNC}"
+        printf "%b\n" "$(c warning)Contenido del archivo de configuración GPG:$(cr)"
         cat "$gpg_config"
         echo ""
     fi
@@ -1400,7 +1441,7 @@ EOF
 # Función para configurar Git
 configure_git() {
     show_separator
-    echo -e "${BLD}⚙️  CONFIGURACIÓN DE GIT${CNC}"
+    echo -e "$(c bold)⚙️  CONFIGURACIÓN DE GIT$(cr)"
     show_separator
 
     # Generar archivo .gitconfig completo (PRIORIDAD)
@@ -1424,7 +1465,7 @@ configure_git() {
 
     success "Configuración Git completada exitosamente"
     echo ""
-    info "Puedes ver tu configuración con: ${CBL}git config --global --list${CNC}"
+    info "Puedes ver tu configuración con: $(c primary)git config --global --list$(cr)"
     
     return 0
 }
@@ -1661,7 +1702,7 @@ create_commit_template() {
 EOF
 
     chmod 644 "$template_path"
-    success "Plantilla de commit creada: ${CBL}$template_path${CNC}"
+    success "Plantilla de commit creada: $(c primary)$template_path$(cr)"
     
     return 0
 }
@@ -1756,7 +1797,7 @@ EOF
             if [ $added_count -gt 0 ]; then
                 echo ""
                 success "Configuración agregada a ${added_count} archivo(s)"
-                info "Reinicia tu terminal o ejecuta: ${CBL}source ~/.bashrc${CNC} / ${CBL}source ~/.zshrc${CNC}"
+                info "Reinicia tu terminal o ejecuta: $(c primary)source ~/.bashrc$(cr) / $(c primary)source ~/.zshrc$(cr)"
             fi
         else
             info "Configuración no agregada. Puedes agregarla manualmente usando el código mostrado arriba"
@@ -1778,7 +1819,7 @@ display_keys() {
     fi
 
     show_separator
-    echo -e "${BLD}📋 RESUMEN DE LLAVES GENERADAS${CNC}"
+    echo -e "$(c bold)📋 RESUMEN DE LLAVES GENERADAS$(cr)"
     show_separator
     echo ""
 
@@ -1788,7 +1829,7 @@ display_keys() {
     
     if [[ -f "$HOME/.ssh/id_ed25519.pub" ]]; then
         show_separator
-        printf "%b\n" "${BLD}${CGR}$(cat "$HOME/.ssh/id_ed25519.pub")${CNC}"
+        printf "%b\n" "$(c bold)$(c success)$(cat "$HOME/.ssh/id_ed25519.pub")$(cr)"
         show_separator
         echo ""
         
@@ -1806,7 +1847,7 @@ display_keys() {
     if [[ -n "$GPG_KEY_ID" ]]; then
         info "2. LLAVE GPG PÚBLICA (para agregar a GitHub):"
         echo ""
-        info "ID de la llave GPG: ${CBL}$GPG_KEY_ID${CNC}"
+        info "ID de la llave GPG: $(c primary)$GPG_KEY_ID$(cr)"
         echo ""
         
         # Exportar llave GPG a archivo temporal
@@ -1835,15 +1876,15 @@ display_keys() {
     show_separator
     info "Próximos pasos:"
     echo ""
-    echo "  ${BLD}${CYE}Para la llave SSH:${CNC}"
-    echo "    1. Ve a: ${CBL}https://github.com/settings/ssh/new${CNC}"
+    echo "  $(c bold)$(c warning)Para la llave SSH:$(cr)"
+    echo "    1. Ve a: $(c primary)https://github.com/settings/ssh/new$(cr)"
     echo "    2. Pega la llave SSH mostrada arriba"
     echo "    3. Dale un título descriptivo"
     echo ""
     
     if [[ -n "$GPG_KEY_ID" ]]; then
-        echo "  ${BLD}${CYE}Para la llave GPG:${CNC}"
-        echo "    1. Ve a: ${CBL}https://github.com/settings/gpg/new${CNC}"
+        echo "  $(c bold)$(c warning)Para la llave GPG:$(cr)"
+        echo "    1. Ve a: $(c primary)https://github.com/settings/gpg/new$(cr)"
         echo "    2. Pega la llave GPG mostrada arriba"
         echo "    3. Tus commits aparecerán como 'Verified' ✓"
         echo ""
@@ -1855,7 +1896,7 @@ display_keys() {
 # Función para guardar llaves en archivos
 save_keys_to_files() {
     show_separator
-    printf "%b\n" "${BLD}${CWH}💾 GUARDANDO LLAVES EN ARCHIVOS${CNC}"
+    printf "%b\n" "$(c bold)$(c text)💾 GUARDANDO LLAVES EN ARCHIVOS$(cr)"
     show_separator
 
     local output_dir="$SCRIPT_DIR/keys-$(date +%Y%m%d_%H%M%S)"
@@ -1903,7 +1944,7 @@ ensure_github_cli_ready() {
     # Verificar si gh está instalado
     if ! command -v gh &> /dev/null; then
         show_separator
-        printf "%b\n" "${BLD}${CYE}⚠️  GITHUB CLI NO ESTÁ INSTALADO${CNC}"
+        printf "%b\n" "$(c bold)$(c warning)⚠️  GITHUB CLI NO ESTÁ INSTALADO$(cr)"
         show_separator
         echo ""
         
@@ -1935,7 +1976,7 @@ ensure_github_cli_ready() {
                                 echo ""
                                 error "No se puede continuar sin GitHub CLI instalado."
                                 echo ""
-                                info "Instala GitHub CLI manualmente y vuelve a ejecutar el script con ${CBL}--auto-upload${CNC}"
+                                info "Instala GitHub CLI manualmente y vuelve a ejecutar el script con $(c primary)--auto-upload$(cr)"
                                 exit 1
                             fi
                             return 1
@@ -1953,7 +1994,7 @@ ensure_github_cli_ready() {
                                 echo ""
                                 error "No se puede continuar sin GitHub CLI instalado."
                                 echo ""
-                                info "Instala GitHub CLI manualmente y vuelve a ejecutar el script con ${CBL}--auto-upload${CNC}"
+                                info "Instala GitHub CLI manualmente y vuelve a ejecutar el script con $(c primary)--auto-upload$(cr)"
                                 exit 1
                             fi
                             return 1
@@ -1965,7 +2006,7 @@ ensure_github_cli_ready() {
                             echo ""
                             error "No se puede continuar sin GitHub CLI instalado."
                             echo ""
-                            info "Instala GitHub CLI manualmente y vuelve a ejecutar el script con ${CBL}--auto-upload${CNC}"
+                            info "Instala GitHub CLI manualmente y vuelve a ejecutar el script con $(c primary)--auto-upload$(cr)"
                             exit 1
                         fi
                         return 1
@@ -1977,7 +2018,7 @@ ensure_github_cli_ready() {
                     echo ""
                     error "El flag --auto-upload requiere GitHub CLI instalado y configurado."
                     echo ""
-                    info "El script no puede continuar sin GitHub CLI. Instálalo y vuelve a ejecutar con ${CBL}--auto-upload${CNC}"
+                    info "El script no puede continuar sin GitHub CLI. Instálalo y vuelve a ejecutar con $(c primary)--auto-upload$(cr)"
                     exit 1
                 fi
                 return 1
@@ -1992,13 +2033,13 @@ ensure_github_cli_ready() {
                 info "En modo no-interactivo, debes instalar y autenticar GitHub CLI antes de ejecutar este script:"
                 echo ""
                 echo "  1. Instala GitHub CLI:"
-                echo "     ${CBL}sudo pacman -S github-cli${CNC}  # Arch Linux"
-                echo "     ${CBL}sudo apt install gh${CNC}        # Ubuntu/Debian"
+                echo "     $(c primary)sudo pacman -S github-cli$(cr)  # Arch Linux"
+                echo "     $(c primary)sudo apt install gh$(cr)        # Ubuntu/Debian"
                 echo ""
                 echo "  2. Autentica GitHub CLI:"
-                echo "     ${CBL}gh auth login${CNC}"
+                echo "     $(c primary)gh auth login$(cr)"
                 echo ""
-                echo "  3. Vuelve a ejecutar este script con ${CBL}--auto-upload${CNC}"
+                echo "  3. Vuelve a ejecutar este script con $(c primary)--auto-upload$(cr)"
                 echo ""
                 exit 1
             fi
@@ -2017,7 +2058,7 @@ ensure_github_cli_ready() {
 
     # No está autenticado
     show_separator
-    printf "%b\n" "${BLD}${CYE}⚠️  GITHUB CLI NO ESTÁ AUTENTICADO${CNC}"
+    printf "%b\n" "$(c bold)$(c warning)⚠️  GITHUB CLI NO ESTÁ AUTENTICADO$(cr)"
     show_separator
     echo ""
     
@@ -2032,14 +2073,14 @@ ensure_github_cli_ready() {
             echo ""
         fi
         info "Opciones de autenticación:"
-        echo "  1. ${CBL}gh auth login${CNC} - Autenticación interactiva (recomendada)"
-        echo "  2. ${CBL}gh auth login --with-token${CNC} - Autenticación con token"
+        echo "  1. $(c primary)gh auth login$(cr) - Autenticación interactiva (recomendada)"
+        echo "  2. $(c primary)gh auth login --with-token$(cr) - Autenticación con token"
         echo ""
         
         if ask_yes_no "¿Deseas ejecutar 'gh auth login' ahora?" "y"; then
             echo ""
             info "Ejecutando autenticación de GitHub CLI..."
-            echo "${DIM}Nota: Sigue las instrucciones en pantalla para completar la autenticación.${CNC}"
+            echo "$(c muted)Nota: Sigue las instrucciones en pantalla para completar la autenticación.$(cr)"
             echo ""
             
             if gh auth login; then
@@ -2053,10 +2094,10 @@ ensure_github_cli_ready() {
                 if [[ "$early_mode" == "early" ]]; then
                     error "No se puede continuar sin GitHub CLI autenticado."
                     echo ""
-                    info "Autentica GitHub CLI manualmente con ${CBL}gh auth login${CNC} y vuelve a ejecutar el script con ${CBL}--auto-upload${CNC}"
+                    info "Autentica GitHub CLI manualmente con $(c primary)gh auth login$(cr) y vuelve a ejecutar el script con $(c primary)--auto-upload$(cr)"
                     exit 1
                 fi
-                info "Puedes autenticarte manualmente más tarde con: ${CBL}gh auth login${CNC}"
+                info "Puedes autenticarte manualmente más tarde con: $(c primary)gh auth login$(cr)"
                 return 1
             fi
         else
@@ -2064,12 +2105,12 @@ ensure_github_cli_ready() {
             if [[ "$early_mode" == "early" ]]; then
                 error "El flag --auto-upload requiere GitHub CLI autenticado."
                 echo ""
-                info "El script no puede continuar sin autenticación. Autentica GitHub CLI con ${CBL}gh auth login${CNC} y vuelve a ejecutar con ${CBL}--auto-upload${CNC}"
+                info "El script no puede continuar sin autenticación. Autentica GitHub CLI con $(c primary)gh auth login$(cr) y vuelve a ejecutar con $(c primary)--auto-upload$(cr)"
                 exit 1
             fi
             warning "Autenticación omitida. Las llaves no se subirán automáticamente."
             echo ""
-            info "Para autenticarte más tarde, ejecuta: ${CBL}gh auth login${CNC}"
+            info "Para autenticarte más tarde, ejecuta: $(c primary)gh auth login$(cr)"
             return 1
         fi
     else
@@ -2082,26 +2123,26 @@ ensure_github_cli_ready() {
             info "En modo no-interactivo, debes autenticar GitHub CLI antes de ejecutar este script:"
             echo ""
             echo "  1. Autentica GitHub CLI manualmente:"
-            echo "     ${CBL}gh auth login${CNC}"
+            echo "     $(c primary)gh auth login$(cr)"
             echo ""
             echo "  2. O usa un token de GitHub:"
-            echo "     ${CBL}echo 'tu_token_github' | gh auth login --with-token${CNC}"
+            echo "     $(c primary)echo 'tu_token_github' | gh auth login --with-token$(cr)"
             echo ""
-            echo "  3. Vuelve a ejecutar este script con ${CBL}--auto-upload${CNC}"
+            echo "  3. Vuelve a ejecutar este script con $(c primary)--auto-upload$(cr)"
             echo ""
             exit 1
         else
             info "GitHub CLI está instalado pero requiere autenticación para subir llaves."
             echo ""
-            printf "%b\n" "${CYE}Para habilitar la subida automática en modo no-interactivo:${CNC}"
+            printf "%b\n" "$(c warning)Para habilitar la subida automática en modo no-interactivo:$(cr)"
             echo ""
             echo "  1. Autentica GitHub CLI manualmente:"
-            echo "     ${CBL}gh auth login${CNC}"
+            echo "     $(c primary)gh auth login$(cr)"
             echo ""
             echo "  2. O usa un token de GitHub:"
-            echo "     ${CBL}echo 'tu_token_github' | gh auth login --with-token${CNC}"
+            echo "     $(c primary)echo 'tu_token_github' | gh auth login --with-token$(cr)"
             echo ""
-            echo "  3. Luego vuelve a ejecutar este script con ${CBL}--auto-upload${CNC}"
+            echo "  3. Luego vuelve a ejecutar este script con $(c primary)--auto-upload$(cr)"
             echo ""
             warning "Omitiendo subida automática. Las llaves se guardarán localmente."
             return 1
@@ -2112,31 +2153,31 @@ ensure_github_cli_ready() {
 show_manual_gh_install_instructions() {
     local os_type="$1"
     echo ""
-    printf "%b\n" "${BLD}${CCY}📦 INSTRUCCIONES DE INSTALACIÓN MANUAL:${CNC}"
+    printf "%b\n" "$(c bold)$(c accent)📦 INSTRUCCIONES DE INSTALACIÓN MANUAL:$(cr)"
     echo ""
     
     case "$os_type" in
         arch|manjaro|endeavouros|garuda)
-            printf "%b\n" "${CYE}Arch Linux / Manjaro:${CNC}"
-            echo "  ${CBL}sudo pacman -S github-cli${CNC}"
-            echo "  ${DIM}o desde AUR:${CNC} ${CBL}yay -S github-cli${CNC}"
+            printf "%b\n" "$(c warning)Arch Linux / Manjaro:$(cr)"
+            echo "  $(c primary)sudo pacman -S github-cli$(cr)"
+            echo "  $(c muted)o desde AUR:$(cr) $(c primary)yay -S github-cli$(cr)"
             ;;
         ubuntu|debian|linuxmint|pop)
-            printf "%b\n" "${CYE}Ubuntu / Debian:${CNC}"
-            echo "  ${CBL}sudo apt update && sudo apt install gh${CNC}"
+            printf "%b\n" "$(c warning)Ubuntu / Debian:$(cr)"
+            echo "  $(c primary)sudo apt update && sudo apt install gh$(cr)"
             ;;
         fedora|rhel|centos|rocky|alma)
-            printf "%b\n" "${CYE}Fedora / RHEL / CentOS:${CNC}"
-            echo "  ${CBL}sudo dnf install gh${CNC}"
+            printf "%b\n" "$(c warning)Fedora / RHEL / CentOS:$(cr)"
+            echo "  $(c primary)sudo dnf install gh$(cr)"
             ;;
         *)
-            printf "%b\n" "${CYE}Instalación genérica:${CNC}"
-            echo "  Visita: ${CBL}https://cli.github.com${CNC}"
+            printf "%b\n" "$(c warning)Instalación genérica:$(cr)"
+            echo "  Visita: $(c primary)https://cli.github.com$(cr)"
             ;;
     esac
     
     echo ""
-    info "Después de instalar, vuelve a ejecutar este script con ${CBL}--auto-upload${CNC}"
+    info "Después de instalar, vuelve a ejecutar este script con $(c primary)--auto-upload$(cr)"
     echo ""
 }
 
@@ -2168,7 +2209,7 @@ upload_gpg_key_to_github() {
     local existing_keys
     existing_keys=$(gh gpg-key list 2>/dev/null | grep -i "$GPG_KEY_ID" || true)
     if [[ -n "$existing_keys" ]]; then
-        info "La llave GPG ${CBL}$GPG_KEY_ID${CNC} ya existe en tu cuenta de GitHub."
+        info "La llave GPG $(c primary)$GPG_KEY_ID$(cr) ya existe en tu cuenta de GitHub."
         GPG_KEY_UPLOADED=true
         return 0
     fi
@@ -2195,14 +2236,14 @@ upload_gpg_key_to_github() {
     else
         # Verificar si el error es porque la llave ya existe (puede haber cambiado entre la verificación y la subida)
         if echo "$gh_output" | grep -qi "already exists\|duplicate\|already registered"; then
-            info "La llave GPG ${CBL}$GPG_KEY_ID${CNC} ya existe en tu cuenta de GitHub."
+            info "La llave GPG $(c primary)$GPG_KEY_ID$(cr) ya existe en tu cuenta de GitHub."
             GPG_KEY_UPLOADED=true
             rm -f "$gpg_temp"
             return 0
         else
             warning "No se pudo subir la llave GPG automáticamente."
             if [[ -n "$gh_output" ]]; then
-                printf "%b\n" "${DIM}Error: ${gh_output}${CNC}"
+                printf "%b\n" "$(c muted)Error: ${gh_output}$(cr)"
             fi
             rm -f "$gpg_temp"
             return 1
@@ -2249,7 +2290,7 @@ maybe_upload_keys() {
     # Intentar subir llaves
     echo ""
     show_separator
-    printf "%b\n" "${BLD}${CGR}🚀 SUBIENDO LLAVES A GITHUB${CNC}"
+    printf "%b\n" "$(c bold)$(c success)🚀 SUBIENDO LLAVES A GITHUB$(cr)"
     show_separator
     echo ""
 
@@ -2273,17 +2314,17 @@ maybe_upload_keys() {
         success "✓ Subida de llaves completada"
         echo ""
         if [[ "$ssh_uploaded" == "true" ]]; then
-            info "  • Llave SSH: ${CGR}Subida exitosamente${CNC}"
+            info "  • Llave SSH: $(c success)Subida exitosamente$(cr)"
         fi
         if [[ "$gpg_uploaded" == "true" ]]; then
-            info "  • Llave GPG: ${CGR}Subida exitosamente${CNC}"
+            info "  • Llave GPG: $(c success)Subida exitosamente$(cr)"
         fi
     else
         warning "No se pudieron subir las llaves automáticamente"
         echo ""
         info "Puedes subirlas manualmente desde:"
-        echo "  ${CBL}https://github.com/settings/ssh/new${CNC} (SSH)"
-        echo "  ${CBL}https://github.com/settings/gpg/new${CNC} (GPG)"
+        echo "  $(c primary)https://github.com/settings/ssh/new$(cr) (SSH)"
+        echo "  $(c primary)https://github.com/settings/gpg/new$(cr) (GPG)"
     fi
     
     show_separator
@@ -2293,7 +2334,7 @@ maybe_upload_keys() {
 # Función para test de conectividad
 test_github_connection() {
     show_separator
-    printf "%b\n" "${BLD}${CWH}🧪 PRUEBA DE CONECTIVIDAD${CNC}"
+    printf "%b\n" "$(c bold)$(c text)🧪 PRUEBA DE CONECTIVIDAD$(cr)"
     show_separator
 
     if ask_yes_no "¿Deseas probar la conexión SSH con GitHub ahora?"; then
@@ -2305,11 +2346,11 @@ test_github_connection() {
 
         if [[ $ssh_exit_code -eq 1 ]] && [[ $ssh_output == *"successfully authenticated"* ]]; then
             success "¡Conexión SSH con GitHub exitosa!"
-            printf "%b\n" "${CGR}$ssh_output${CNC}"
+            printf "%b\n" "$(c success)$ssh_output$(cr)"
         else
             warning "La conexión SSH falló o está pendiente de configuración"
-            printf "%b\n" "${CYE}Salida: $ssh_output${CNC}"
-            printf "%b\n" "${CBL}Asegúrate de haber agregado la llave SSH a tu cuenta de GitHub${CNC}"
+            printf "%b\n" "$(c warning)Salida: $ssh_output$(cr)"
+            printf "%b\n" "$(c primary)Asegúrate de haber agregado la llave SSH a tu cuenta de GitHub$(cr)"
         fi
     fi
 }
@@ -2319,40 +2360,40 @@ test_github_connection() {
 show_final_instructions() {
     echo ""
     show_separator
-    printf "%b\n" "${BLD}${CMA}╔══════════════════════════════════════════════════════════════════════════════╗${CNC}"
-    printf "%b\n" "${BLD}${CMA}║${CNC}  ${BLD}${CWH}📚  INSTRUCCIONES FINALES PARA GITHUB${CNC}                                    ${BLD}${CMA}║${CNC}"
-    printf "%b\n" "${BLD}${CMA}╚══════════════════════════════════════════════════════════════════════════════╝${CNC}"
+    printf "%b\n" "$(c bold)$(c secondary)╔══════════════════════════════════════════════════════════════════════════════╗$(cr)"
+    printf "%b\n" "$(c bold)$(c secondary)║$(cr)  $(c bold)$(c text)📚  INSTRUCCIONES FINALES PARA GITHUB$(cr)                                    $(c bold)$(c secondary)║$(cr)"
+    printf "%b\n" "$(c bold)$(c secondary)╚══════════════════════════════════════════════════════════════════════════════╝$(cr)"
     echo ""
 
     if [[ "$SSH_KEY_UPLOADED" == true ]] || [[ "$GPG_KEY_UPLOADED" == true ]]; then
-        info "Subida automática: ${CGR}SSH $( [[ "$SSH_KEY_UPLOADED" == true ]] && echo '✓' || echo '✗' )${CNC}  |  ${CGR}GPG $( [[ "$GPG_KEY_UPLOADED" == true ]] && echo '✓' || echo '✗' )${CNC}"
+        info "Subida automática: $(c success)SSH $( [[ "$SSH_KEY_UPLOADED" == true ]] && echo '✓' || echo '✗' )$(cr)  |  $(c success)GPG $( [[ "$GPG_KEY_UPLOADED" == true ]] && echo '✓' || echo '✗' )$(cr)"
         echo ""
     fi
 
     # Solo mostrar pasos de agregar llaves si no se subieron automáticamente
     if [[ "$SSH_KEY_UPLOADED" != true ]]; then
-        printf "%b\n" "${BLD}${CCY}🔐 PASO 1: AGREGAR LLAVE SSH${CNC}"
-        printf "%b\n" "${DIM}${CNC}   ├─ ${CBL}URL:${CNC} ${BLD}https://github.com/settings/ssh/new${CNC}"
-        printf "%b\n" "${DIM}${CNC}   ├─ ${CBL}Título sugerido:${CNC} $(hostname)-$(date +%Y%m%d)"
-        printf "%b\n" "${DIM}${CNC}   └─ ${CYE}Pega la llave SSH pública que se mostró arriba${CNC}"
+        printf "%b\n" "$(c bold)$(c accent)🔐 PASO 1: AGREGAR LLAVE SSH$(cr)"
+        printf "%b\n" "$(c muted)$(cr)   ├─ $(c primary)URL:$(cr) $(c bold)https://github.com/settings/ssh/new$(cr)"
+        printf "%b\n" "$(c muted)$(cr)   ├─ $(c primary)Título sugerido:$(cr) $(hostname)-$(date +%Y%m%d)"
+        printf "%b\n" "$(c muted)$(cr)   └─ $(c warning)Pega la llave SSH pública que se mostró arriba$(cr)"
         echo ""
     else
-        printf "%b\n" "${BLD}${CCY}🔐 PASO 1: LLAVE SSH${CNC}"
-        printf "%b\n" "${DIM}${CNC}   └─ ${CGR}✓ Ya agregada automáticamente a tu cuenta de GitHub${CNC}"
+        printf "%b\n" "$(c bold)$(c accent)🔐 PASO 1: LLAVE SSH$(cr)"
+        printf "%b\n" "$(c muted)$(cr)   └─ $(c success)✓ Ya agregada automáticamente a tu cuenta de GitHub$(cr)"
         echo ""
     fi
     
     if [[ "$GPG_KEY_UPLOADED" != true ]]; then
         if [[ -n "$GPG_KEY_ID" ]]; then
-            printf "%b\n" "${BLD}${CCY}🔑 PASO 2: AGREGAR LLAVE GPG (Opcional)${CNC}"
-            printf "%b\n" "${DIM}${CNC}   ├─ ${CBL}URL:${CNC} ${BLD}https://github.com/settings/gpg/new${CNC}"
-            printf "%b\n" "${DIM}${CNC}   ├─ ${CYE}Pega la llave GPG pública que se mostró arriba${CNC}"
-            printf "%b\n" "${DIM}${CNC}   └─ ${DIM}Esto permitirá que tus commits aparezcan como 'Verified'${CNC}"
+            printf "%b\n" "$(c bold)$(c accent)🔑 PASO 2: AGREGAR LLAVE GPG (Opcional)$(cr)"
+            printf "%b\n" "$(c muted)$(cr)   ├─ $(c primary)URL:$(cr) $(c bold)https://github.com/settings/gpg/new$(cr)"
+            printf "%b\n" "$(c muted)$(cr)   ├─ $(c warning)Pega la llave GPG pública que se mostró arriba$(cr)"
+            printf "%b\n" "$(c muted)$(cr)   └─ $(c muted)Esto permitirá que tus commits aparezcan como 'Verified'$(cr)"
             echo ""
         fi
     else
-        printf "%b\n" "${BLD}${CCY}🔑 PASO 2: LLAVE GPG${CNC}"
-        printf "%b\n" "${DIM}${CNC}   └─ ${CGR}✓ Ya agregada automáticamente a tu cuenta de GitHub${CNC}"
+        printf "%b\n" "$(c bold)$(c accent)🔑 PASO 2: LLAVE GPG$(cr)"
+        printf "%b\n" "$(c muted)$(cr)   └─ $(c success)✓ Ya agregada automáticamente a tu cuenta de GitHub$(cr)"
         echo ""
     fi
     
@@ -2364,39 +2405,39 @@ show_final_instructions() {
         paso_num=2
     fi
     
-    printf "%b\n" "${BLD}${CCY}✅ PASO ${paso_num}: VERIFICAR CONFIGURACIÓN${CNC}"
-    printf "%b\n" "${DIM}${CNC}   ├─ ${CBL}Probar SSH:${CNC} ${BLD}${CGR}ssh -T git@github.com${CNC}"
-    printf "%b\n" "${DIM}${CNC}   │  ${DIM}→ Deberías ver: 'Hi username! You've successfully authenticated...'${CNC}"
-    printf "%b\n" "${DIM}${CNC}   └─ ${CBL}Probar GPG:${CNC} ${DIM}Haz un commit y verifica el badge 'Verified' en GitHub${CNC}"
+    printf "%b\n" "$(c bold)$(c accent)✅ PASO ${paso_num}: VERIFICAR CONFIGURACIÓN$(cr)"
+    printf "%b\n" "$(c muted)$(cr)   ├─ $(c primary)Probar SSH:$(cr) $(c bold)$(c success)ssh -T git@github.com$(cr)"
+    printf "%b\n" "$(c muted)$(cr)   │  $(c muted)→ Deberías ver: 'Hi username! You've successfully authenticated...'$(cr)"
+    printf "%b\n" "$(c muted)$(cr)   └─ $(c primary)Probar GPG:$(cr) $(c muted)Haz un commit y verifica el badge 'Verified' en GitHub$(cr)"
     echo ""
     
     ((paso_num++))
-    printf "%b\n" "${BLD}${CCY}📁 PASO ${paso_num}: ARCHIVOS GENERADOS${CNC}"
-    printf "%b\n" "${DIM}${CNC}   ├─ ${BLD}${CBL}~/.gitconfig${CNC}     ${DIM}→ Configuración profesional de Git${CNC}"
-    printf "%b\n" "${DIM}${CNC}   ├─ ${BLD}${CBL}~/.gitmessage${CNC}    ${DIM}→ Plantilla para mensajes de commit${CNC}"
-    printf "%b\n" "${DIM}${CNC}   ├─ ${BLD}${CBL}~/.ssh/config${CNC}    ${DIM}→ Configuración SSH optimizada${CNC}"
-    printf "%b\n" "${DIM}${CNC}   └─ ${BLD}${CBL}~/.ssh/id_ed25519${CNC} ${DIM}→ Tu llave SSH privada (¡nunca la compartas!)${CNC}"
+    printf "%b\n" "$(c bold)$(c accent)📁 PASO ${paso_num}: ARCHIVOS GENERADOS$(cr)"
+    printf "%b\n" "$(c muted)$(cr)   ├─ $(c bold)$(c primary)~/.gitconfig$(cr)     $(c muted)→ Configuración profesional de Git$(cr)"
+    printf "%b\n" "$(c muted)$(cr)   ├─ $(c bold)$(c primary)~/.gitmessage$(cr)    $(c muted)→ Plantilla para mensajes de commit$(cr)"
+    printf "%b\n" "$(c muted)$(cr)   ├─ $(c bold)$(c primary)~/.ssh/config$(cr)    $(c muted)→ Configuración SSH optimizada$(cr)"
+    printf "%b\n" "$(c muted)$(cr)   └─ $(c bold)$(c primary)~/.ssh/id_ed25519$(cr) $(c muted)→ Tu llave SSH privada (¡nunca la compartas!)$(cr)"
     echo ""
     
     ((paso_num++))
-    printf "%b\n" "${BLD}${CCY}🔐 PASO ${paso_num}: CREDENTIAL MANAGER${CNC}"
-    printf "%b\n" "${DIM}${CNC}   ├─ ${CGR}✓${CNC} Git Credential Manager configurado"
-    printf "%b\n" "${DIM}${CNC}   ├─ ${DIM}No se solicitará contraseña en cada operación${CNC}"
-    printf "%b\n" "${DIM}${CNC}   ├─ ${CYE}En el primer push, se abrirá el navegador para autenticar${CNC}"
-    printf "%b\n" "${DIM}${CNC}   └─ ${CBL}Pre-autenticar (opcional):${CNC} ${BLD}${CGR}git-credential-manager github login${CNC}"
+    printf "%b\n" "$(c bold)$(c accent)🔐 PASO ${paso_num}: CREDENTIAL MANAGER$(cr)"
+    printf "%b\n" "$(c muted)$(cr)   ├─ $(c success)✓$(cr) Git Credential Manager configurado"
+    printf "%b\n" "$(c muted)$(cr)   ├─ $(c muted)No se solicitará contraseña en cada operación$(cr)"
+    printf "%b\n" "$(c muted)$(cr)   ├─ $(c warning)En el primer push, se abrirá el navegador para autenticar$(cr)"
+    printf "%b\n" "$(c muted)$(cr)   └─ $(c primary)Pre-autenticar (opcional):$(cr) $(c bold)$(c success)git-credential-manager github login$(cr)"
     echo ""
     
-    printf "%b\n" "${BLD}${CCY}💡 COMANDOS ÚTILES:${CNC}"
-    printf "%b\n" "${DIM}${CNC}   ├─ ${CBL}Ver configuración Git:${CNC}    ${BLD}git config --list --show-origin${CNC}"
-    printf "%b\n" "${DIM}${CNC}   ├─ ${CBL}Ver llaves SSH:${CNC}          ${BLD}ls -la ~/.ssh/${CNC}"
-    printf "%b\n" "${DIM}${CNC}   ├─ ${CBL}Ver llaves GPG:${CNC}          ${BLD}gpg --list-secret-keys --keyid-format=long${CNC}"
-    printf "%b\n" "${DIM}${CNC}   └─ ${CBL}Ver logs del script:${CNC}     ${BLD}cat $LOG_FILE${CNC}"
+    printf "%b\n" "$(c bold)$(c accent)💡 COMANDOS ÚTILES:$(cr)"
+    printf "%b\n" "$(c muted)$(cr)   ├─ $(c primary)Ver configuración Git:$(cr)    $(c bold)git config --list --show-origin$(cr)"
+    printf "%b\n" "$(c muted)$(cr)   ├─ $(c primary)Ver llaves SSH:$(cr)          $(c bold)ls -la ~/.ssh/$(cr)"
+    printf "%b\n" "$(c muted)$(cr)   ├─ $(c primary)Ver llaves GPG:$(cr)          $(c bold)gpg --list-secret-keys --keyid-format=long$(cr)"
+    printf "%b\n" "$(c muted)$(cr)   └─ $(c primary)Ver logs del script:$(cr)     $(c bold)cat $LOG_FILE$(cr)"
     echo ""
     
     show_separator
-    printf "%b\n" "${BLD}${CGR}✨ ¡CONFIGURACIÓN COMPLETADA EXITOSAMENTE! ✨${CNC}"
-    printf "%b\n" "${CCY}Tu entorno de desarrollo Git está configurado de forma profesional.${CNC}"
-    printf "%b\n" "${DIM}Ahora puedes trabajar con GitHub con autenticación SSH y commits firmados.${CNC}"
+    printf "%b\n" "$(c bold)$(c success)✨ ¡CONFIGURACIÓN COMPLETADA EXITOSAMENTE! ✨$(cr)"
+    printf "%b\n" "$(c accent)Tu entorno de desarrollo Git está configurado de forma profesional.$(cr)"
+    printf "%b\n" "$(c muted)Ahora puedes trabajar con GitHub con autenticación SSH y commits firmados.$(cr)"
     show_separator
     echo ""
 }
