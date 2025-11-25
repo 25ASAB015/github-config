@@ -1520,7 +1520,7 @@ ok 6. **Modo interactivo vs no-interactivo** (#2) - Automatización
 ok 12. **Logo animado** (#9)
 13. **Modo tutorial** (#24)
 14. **Perfiles pre-configurados** (#22)
-15. **Tema de colores mejorado** (#6)
+ok 15. **Tema de colores mejorado** (#6)
 
 ### Métricas de Éxito
 
