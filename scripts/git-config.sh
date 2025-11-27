@@ -116,46 +116,98 @@ show_changes_summary() {
     show_separator
     echo ""
     
-    printf "%b\n" "$(c bold)Archivos que se crearán/modificarán:$(cr)"
+    printf "%b\n" "$(c bold)$(c accent)🔧 Archivos que se crearán/modificarán:$(cr)"
     echo ""
     
-    # SSH Key
-    if [[ -f "$HOME/.ssh/id_ed25519" ]]; then
-        printf "  $(c warning)~/.ssh/id_ed25519$(cr)     $(c muted)→ Ya existe (se puede respaldar)$(cr)\n"
+    # SSH keys
+    if [[ ! -f "$HOME/.ssh/id_ed25519" ]]; then
+        printf "  $(c success)[CREAR]$(cr)    ~/.ssh/id_ed25519\n"
+        printf "  $(c success)[CREAR]$(cr)    ~/.ssh/id_ed25519.pub\n"
     else
-        printf "  $(c success)~/.ssh/id_ed25519$(cr)     $(c muted)→ Nueva llave SSH$(cr)\n"
+        printf "  $(c error)[SOBRESCRIBIR]$(cr) ~/.ssh/id_ed25519\n"
+        printf "  $(c error)[SOBRESCRIBIR]$(cr) ~/.ssh/id_ed25519.pub\n"
     fi
     
-    # GPG Key
+    # .gitconfig
+    if [[ -f "$HOME/.gitconfig" ]]; then
+        printf "  $(c warning)[MODIFICAR]$(cr) ~/.gitconfig $(c muted)(backup: ~/.gitconfig.backup-*)$(cr)\n"
+    else
+        printf "  $(c success)[CREAR]$(cr)    ~/.gitconfig\n"
+    fi
+    
+    # GPG key
     if [[ "${GENERATE_GPG:-false}" == "true" ]]; then
         if [[ -n "$GPG_KEY_ID" ]]; then
-            printf "  $(c info)Llave GPG$(cr)              $(c muted)→ Usando existente: $GPG_KEY_ID$(cr)\n"
+            printf "  $(c info)[USAR EXISTENTE]$(cr) Llave GPG (ID: $GPG_KEY_ID)\n"
         else
-            printf "  $(c success)Llave GPG$(cr)              $(c muted)→ Nueva llave para firmar commits$(cr)\n"
+            printf "  $(c success)[CREAR]$(cr)    Llave GPG (4096-bit RSA)\n"
         fi
-    else
-        printf "  $(c muted)Llave GPG$(cr)              $(c muted)→ No se generará$(cr)\n"
     fi
     
-    # Git config
-    if [[ -f "$HOME/.gitconfig" ]]; then
-        printf "  $(c warning)~/.gitconfig$(cr)          $(c muted)→ Se respaldará y reemplazará$(cr)\n"
-    else
-        printf "  $(c success)~/.gitconfig$(cr)          $(c muted)→ Nuevo archivo$(cr)\n"
+    # Shell configs
+    if [[ -f "$HOME/.bashrc" ]]; then
+        printf "  $(c warning)[MODIFICAR]$(cr) ~/.bashrc $(c muted)(agregar configuración SSH agent)$(cr)\n"
     fi
-    
-    # Commit template
-    printf "  $(c success)~/.gitmessage$(cr)         $(c muted)→ Plantilla de commit$(cr)\n"
-    
-    # SSH config
-    if [[ -f "$HOME/.ssh/config" ]]; then
-        printf "  $(c info)~/.ssh/config$(cr)         $(c muted)→ Ya existe$(cr)\n"
-    else
-        printf "  $(c success)~/.ssh/config$(cr)         $(c muted)→ Configuración SSH para GitHub$(cr)\n"
+    if [[ -f "$HOME/.zshrc" ]]; then
+        printf "  $(c warning)[MODIFICAR]$(cr) ~/.zshrc $(c muted)(agregar configuración SSH agent)$(cr)\n"
     fi
     
     echo ""
+    printf "%b\n" "$(c bold)$(c accent)📦 Configuración Git:$(cr)"
+    echo ""
+    
+    # Determine credential helper (same logic as generate_gitconfig)
+    local credential_helper="manager"
+    local os_type
+    os_type=$(uname -s)
+    
+    case $os_type in
+        "Darwin")
+            if ! command -v git-credential-manager &> /dev/null; then
+                credential_helper="osxkeychain"
+            fi
+            ;;
+        "Linux")
+            if ! command -v git-credential-manager &> /dev/null; then
+                credential_helper="store"
+            else
+                credential_helper="manager (secretservice)"
+            fi
+            ;;
+    esac
+    
+    printf "  $(c primary)Nombre:$(cr)        $USER_NAME\n"
+    printf "  $(c primary)Email:$(cr)         $USER_EMAIL\n"
+    printf "  $(c primary)Rama default:$(cr)  master\n"
+    if [[ "${GENERATE_GPG:-false}" == "true" ]]; then
+        if [[ -n "$GPG_KEY_ID" ]]; then
+            printf "  $(c primary)GPG signing:$(cr)   $(c success)true$(cr) $(c muted)(usando llave existente: ${GPG_KEY_ID})$(cr)\n"
+        else
+            printf "  $(c primary)GPG signing:$(cr)   $(c success)true$(cr) $(c muted)(se generará nueva llave)$(cr)\n"
+        fi
+    else
+        printf "  $(c primary)GPG signing:$(cr)   $(c warning)false$(cr)\n"
+    fi
+    printf "  $(c primary)Credential:$(cr)    $credential_helper\n"
+    
+    echo ""
+    printf "%b\n" "$(c bold)$(c accent)📝 Notas importantes:$(cr)"
+    echo ""
+    if [[ -f "$HOME/.gitconfig" ]]; then
+        printf "  $(c muted)•$(cr) Se creará un backup de tu $(c primary).gitconfig$(cr) actual antes de modificarlo\n"
+    fi
+    if [[ -f "$HOME/.ssh/id_ed25519" ]]; then
+        printf "  $(c muted)•$(cr) Las llaves SSH existentes serán $(c warning)sobrescritas$(cr)\n"
+    fi
+    if [[ "${GENERATE_GPG:-false}" == "true" ]] && [[ -n "$GPG_KEY_ID" ]]; then
+        printf "  $(c muted)•$(cr) Se usará tu llave GPG existente $(c primary)($GPG_KEY_ID)$(cr)\n"
+    fi
+    if [[ "${AUTO_UPLOAD_KEYS:-false}" == "true" ]]; then
+        printf "  $(c muted)•$(cr) Las llaves se subirán automáticamente a GitHub $(c success)(--auto-upload activo)$(cr)\n"
+    fi
+    echo ""
     show_separator
+    echo ""
     
     if ! ask_yes_no "¿Deseas continuar con estos cambios?" "y"; then
         info "Operación cancelada por el usuario"

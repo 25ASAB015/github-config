@@ -222,7 +222,7 @@ backup_existing_keys() {
             
             for file in "${existing_keys[@]}"; do
                 if cp "$file" "$backup_dir/" 2>/dev/null; then
-                    success "✓ Backup creado: $(basename "$file")"
+                    success "Backup creado: $(basename "$file")"
                     log "Backed up: $file"
                 else
                     error "No se pudo hacer backup de: $(basename "$file")"
@@ -235,5 +235,6 @@ backup_existing_keys() {
         fi
     fi
     
+    echo ""
     return 0
 }
