@@ -4,6 +4,7 @@
 TBD - created by archiving change add-non-interactive-mode. Update Purpose after archive.
 ## Requirements
 ### Requirement: Non-Interactive Mode
+
 The system SHALL support execution without user interaction, allowing automation and unattended execution.
 
 #### Scenario: Non-interactive mode via command-line flag
@@ -15,11 +16,14 @@ The system SHALL support execution without user interaction, allowing automation
 - **WHEN** the script is executed with `INTERACTIVE_MODE=false`
 - **THEN** all `ask_yes_no()` prompts use their default values without waiting for user input
 - **AND** the script completes without requiring any user interaction
+- **AND** `INTERACTIVE_MODE` SHALL be defined in `config/defaults.sh` (centralized configuration)
 
 #### Scenario: Interactive mode remains default
 - **WHEN** the script is executed without flags or environment variables
 - **THEN** the script operates in interactive mode (prompts for user input)
 - **AND** existing behavior is unchanged
+
+---
 
 ### Requirement: Auto-Yes Mode
 The system SHALL support automatically answering "yes" to all prompts, enabling full automation scenarios.
@@ -40,27 +44,20 @@ The system SHALL support automatically answering "yes" to all prompts, enabling 
 - **AND** `AUTO_YES` takes precedence over default values
 
 ### Requirement: Command-Line Argument Parsing
-The system SHALL parse command-line arguments to control interactive behavior.
 
-#### Scenario: Parse non-interactive flag
-- **WHEN** the script receives `--non-interactive` as an argument
-- **THEN** `INTERACTIVE_MODE` is set to `false`
-- **AND** the flag is processed before script execution begins
+The system SHALL parse command-line arguments for automated execution, **now in the main entry point**.
 
-#### Scenario: Parse auto-yes flag
-- **WHEN** the script receives `--auto-yes` as an argument
-- **THEN** `AUTO_YES` is set to `true`
-- **AND** the flag is processed before script execution begins
+#### Scenario: Argument parsing location
+- **GIVEN** the refactored codebase
+- **WHEN** parsing command-line arguments
+- **THEN** `parse_arguments()` SHALL be defined in `gitconfig.sh` (main entry point)
+- **AND** the function SHALL be documented with dotbare-style headers
 
-#### Scenario: Parse help flag
-- **WHEN** the script receives `--help` or `-h` as an argument
-- **THEN** usage information is displayed
-- **AND** the script exits with code 0
-
-#### Scenario: Unknown flag handling
-- **WHEN** the script receives an unknown command-line argument
-- **THEN** an error message is displayed
-- **AND** the script exits with code 1
+#### Scenario: Help display location
+- **GIVEN** the refactored codebase
+- **WHEN** displaying help information
+- **THEN** `show_help()` SHALL be defined in `scripts/core/ui.sh`
+- **AND** the function SHALL be documented with dotbare-style headers
 
 ### Requirement: Auto-Answer Logging
 The system SHALL log all automatically answered prompts for auditability and debugging.

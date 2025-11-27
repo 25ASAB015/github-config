@@ -211,9 +211,9 @@
 **Validation:** Script completes without errors in non-interactive mode
 
 ### 5.4 Functional Testing - Auto Upload Mode
-- [ ] Test `./gitconfig.sh --auto-upload` with gh authenticated
-- [ ] Verify keys are uploaded to GitHub
-- [ ] Test `./gitconfig.sh --non-interactive --auto-upload`
+- [x] Test `./gitconfig.sh --auto-upload` with gh authenticated
+- [x] Verify keys are uploaded to GitHub
+- [x] Test `./gitconfig.sh --non-interactive --auto-upload`
 
 **Validation:** Keys successfully uploaded when gh is authenticated
 
