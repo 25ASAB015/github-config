@@ -165,25 +165,26 @@ initial_checks() {
 # @example
 #   setup_directories
 setup_directories() {
+    info "Configurando directorios de trabajo..."
+    
     local ssh_dir="$HOME/.ssh"
     local gnupg_dir="$HOME/.gnupg"
     
     # Create SSH directory
     if [[ ! -d "$ssh_dir" ]]; then
-        info "Creando directorio SSH..."
         mkdir -p "$ssh_dir"
         chmod 700 "$ssh_dir"
-        success "Directorio SSH creado: $ssh_dir"
+        log "SSH directory created: $ssh_dir"
     fi
     
     # Create GPG directory
     if [[ ! -d "$gnupg_dir" ]]; then
-        info "Creando directorio GPG..."
         mkdir -p "$gnupg_dir"
         chmod 700 "$gnupg_dir"
-        success "Directorio GPG creado: $gnupg_dir"
+        log "GPG directory created: $gnupg_dir"
     fi
     
+    success "Directorios configurados correctamente"
     return 0
 }
 
@@ -196,33 +197,48 @@ setup_directories() {
 # @example
 #   backup_existing_keys
 backup_existing_keys() {
+    info "Verificando llaves SSH existentes..."
+    
     local ssh_dir="$HOME/.ssh"
     local backup_dir="$ssh_dir/backup-$(date +%Y%m%d_%H%M%S)"
-    local has_keys=false
+    local existing_keys=()
     
-    # Check for existing keys
-    for key_file in "$ssh_dir"/id_*; do
-        if [[ -f "$key_file" ]]; then
-            has_keys=true
-            break
+    # Check for existing keys (both RSA and Ed25519)
+    local ssh_files=("$ssh_dir/id_rsa" "$ssh_dir/id_rsa.pub" "$ssh_dir/id_ed25519" "$ssh_dir/id_ed25519.pub")
+    
+    for file in "${ssh_files[@]}"; do
+        if [[ -f "$file" ]]; then
+            existing_keys+=("$file")
         fi
     done
     
-    if [[ "$has_keys" == "true" ]]; then
-        info "Se encontraron llaves SSH existentes"
+    # If keys found, show warning with list and ask for backup
+    if [[ ${#existing_keys[@]} -gt 0 ]]; then
+        warning "Se encontraron ${#existing_keys[@]} llave(s) SSH existente(s):"
+        for file in "${existing_keys[@]}"; do
+            echo "  • $(basename "$file")"
+        done
+        echo ""
         
-        if ask_yes_no "¿Deseas hacer backup de las llaves existentes?"; then
+        if ask_yes_no "¿Deseas hacer un backup de las llaves existentes antes de continuar?" "y"; then
+            info "Creando backup de llaves existentes..."
             mkdir -p "$backup_dir"
             
-            for key_file in "$ssh_dir"/id_*; do
-                if [[ -f "$key_file" ]]; then
-                    cp "$key_file" "$backup_dir/"
-                    log "Backed up: $key_file"
+            for file in "${existing_keys[@]}"; do
+                if cp "$file" "$backup_dir/" 2>/dev/null; then
+                    success "✓ Backup creado: $(basename "$file")"
+                    log "Backed up: $file"
+                else
+                    error "No se pudo hacer backup de: $(basename "$file")"
                 fi
             done
             
-            success "Backup creado en: $backup_dir"
+            success "Backup completado en: $(c primary)$backup_dir$(cr)"
+        else
+            info "Continuando sin hacer backup (las llaves existentes se sobrescribirán)"
         fi
+    else
+        info "No se encontraron llaves SSH existentes"
     fi
     
     return 0
