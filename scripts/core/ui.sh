@@ -244,23 +244,21 @@ show_help() {
 welcome() {
     clear
     logo
-    
-    printf "%b" "$(c bold)$(c success)Este script te ayudará a dejar lista tu configuración de Git y GitHub:$(cr)
-
-  $(c bold)$(c success)[$(c warning)i$(c success)]$(cr) Generar y/o registrar tu clave SSH para GitHub
-  $(c bold)$(c success)[$(c warning)i$(c success)]$(cr) Generar una clave GPG para firmar tus commits
-  $(c bold)$(c success)[$(c warning)i$(c success)]$(cr) Configurar tu archivo $(c primary).gitconfig$(cr) con nombre, email y preferencias recomendadas
-  $(c bold)$(c success)[$(c warning)i$(c success)]$(cr) Instalar y/o autenticar $(c primary)GitHub CLI (gh)$(cr)
-  $(c bold)$(c success)[$(c warning)i$(c success)]$(cr) Instalar y configurar $(c primary)GitKraken CLI (gk)$(cr)
-
-$(c bold)$(c success)[$(c error)!$(c success)]$(cr) $(c bold)$(c error)Este script NO realiza cambios peligrosos en tu sistema$(cr)
-$(c bold)$(c success)[$(c error)!$(c success)]$(cr) $(c bold)$(c error)Solo edita configuraciones relacionadas a Git y GitHub en tu usuario$(cr)
-
-"
+    show_separator
+    printf "%b\n" "$(c bold)$(c text)Bienvenido al configurador de Git$(cr)"
+    printf "%b\n" "$(c muted)Este script configurará:$(cr)"
+    printf "%b\n" "  $(c success)•$(cr) Llaves SSH para autenticación con GitHub"
+    printf "%b\n" "  $(c success)•$(cr) Llaves GPG para firmar commits (opcional)"
+    printf "%b\n" "  $(c success)•$(cr) Configurar tu archivo $(c primary).gitconfig$(cr) con nombre, email y preferencias recomendadas"
+    printf "%b\n" "  $(c success)•$(cr) Git Credential Manager"
+    show_separator
+    echo ""
+    printf "%b\n" "$(c warning)!$(cr) $(c muted)Este script NO realiza cambios peligrosos en tu sistema$(cr)"
+    printf "%b\n" "$(c warning)!$(cr) $(c muted)Solo edita configuraciones relacionadas a Git y GitHub en tu usuario$(cr)"
+    echo ""
     
     # Mostrar información sobre modo no-interactivo si está activo
     if [[ "$INTERACTIVE_MODE" == "false" ]]; then
-        echo ""
         printf "%b\n" "$(c bold)$(c accent)ℹ️  MODO NO-INTERACTIVO ACTIVO$(cr)"
         if [[ -n "${USER_EMAIL:-}" ]] && [[ -n "${USER_NAME:-}" ]]; then
             printf "%b\n" "$(c muted)   Usando: $(c primary)USER_EMAIL=${USER_EMAIL}$(c muted), $(c primary)USER_NAME=${USER_NAME}$(cr)"
