@@ -36,8 +36,6 @@ check_dependencies() {
     local missing_deps=()
     local required_deps=("git" "ssh" "ssh-keygen")
     
-    info "Verificando dependencias requeridas..."
-    
     for dep in "${required_deps[@]}"; do
         if ! command -v "$dep" &> /dev/null; then
             missing_deps+=("$dep")
@@ -71,6 +69,7 @@ check_dependencies() {
     # Check optional dependencies
     check_optional_dependencies
     
+    echo ""
     return 0
 }
 
@@ -81,8 +80,6 @@ check_dependencies() {
 check_optional_dependencies() {
     local optional_deps=("gpg" "gh" "git-credential-manager")
     
-    info "Verificando dependencias opcionales..."
-    
     for dep in "${optional_deps[@]}"; do
         if command -v "$dep" &> /dev/null; then
             printf "  $(c success)✓$(cr) %s\n" "$dep"
@@ -90,8 +87,6 @@ check_optional_dependencies() {
             printf "  $(c muted)○$(cr) %s $(c muted)(no instalado)$(cr)\n" "$dep"
         fi
     done
-    
-    echo ""
 }
 
 #==============================================================================

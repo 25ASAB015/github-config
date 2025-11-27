@@ -103,16 +103,11 @@ show_progress_bar() {
         bar+="░"
     done
     
-    # Display progress bar
-    printf "\r$(c primary)[%s]$(cr) $(c bold)%3d%%$(cr)" "$bar" "$percentage"
-    
+    # Display progress bar with message on same line, then newline
     if [[ -n "$message" ]]; then
-        printf " $(c muted)%s$(cr)" "$message"
-    fi
-    
-    # New line if complete
-    if [[ $current -eq $total ]]; then
-        printf "\n"
+        printf "$(c primary)[%s]$(cr) $(c bold)%3d%%$(cr) $(c muted)%s$(cr)\n" "$bar" "$percentage" "$message"
+    else
+        printf "$(c primary)[%s]$(cr) $(c bold)%3d%%$(cr)\n" "$bar" "$percentage"
     fi
 }
 
@@ -318,4 +313,7 @@ welcome() {
         # This should not happen if default is "y", but handle it anyway
         exit 0
     fi
+    
+    # Add blank line after confirmation
+    echo ""
 }

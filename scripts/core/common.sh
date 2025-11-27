@@ -165,8 +165,6 @@ initial_checks() {
 # @example
 #   setup_directories
 setup_directories() {
-    info "Configurando directorios de trabajo..."
-    
     local ssh_dir="$HOME/.ssh"
     local gnupg_dir="$HOME/.gnupg"
     
@@ -185,6 +183,7 @@ setup_directories() {
     fi
     
     success "Directorios configurados correctamente"
+    echo ""
     return 0
 }
 
@@ -197,8 +196,6 @@ setup_directories() {
 # @example
 #   backup_existing_keys
 backup_existing_keys() {
-    info "Verificando llaves SSH existentes..."
-    
     local ssh_dir="$HOME/.ssh"
     local backup_dir="$ssh_dir/backup-$(date +%Y%m%d_%H%M%S)"
     local existing_keys=()
@@ -221,7 +218,6 @@ backup_existing_keys() {
         echo ""
         
         if ask_yes_no "¿Deseas hacer un backup de las llaves existentes antes de continuar?" "y"; then
-            info "Creando backup de llaves existentes..."
             mkdir -p "$backup_dir"
             
             for file in "${existing_keys[@]}"; do
@@ -235,10 +231,8 @@ backup_existing_keys() {
             
             success "Backup completado en: $(c primary)$backup_dir$(cr)"
         else
-            info "Continuando sin hacer backup (las llaves existentes se sobrescribirán)"
+            info "Continuando sin hacer backup"
         fi
-    else
-        info "No se encontraron llaves SSH existentes"
     fi
     
     return 0
