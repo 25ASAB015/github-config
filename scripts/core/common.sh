@@ -223,7 +223,7 @@ backup_existing_keys() {
             
             for file in "${existing_keys[@]}"; do
                 if cp "$file" "$backup_dir/" 2>/dev/null; then
-                    success "✓ Backup de seguridad creado: $(basename "$file")"
+                    success "Backup de seguridad creado: $(basename "$file")"
                     log "Backed up: $file"
                 else
                     error "No se pudo hacer backup de: $(basename "$file")"
@@ -231,7 +231,7 @@ backup_existing_keys() {
             done
             
             echo ""
-            success "✓ Backup de seguridad completado en: $(c primary)$backup_dir$(cr)"
+            success "Backup de seguridad completado en: $(c primary)$backup_dir$(cr)"
             info "$(c muted)(Este backup contiene tus llaves anteriores antes de ser sobrescritas)$(cr)"
         else
             info "Continuando sin hacer backup de seguridad"

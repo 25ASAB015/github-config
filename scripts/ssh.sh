@@ -189,7 +189,7 @@ EOF
                 else
                     echo "" >> "$config_file"
                     cat "$bashrc_addition" >> "$config_file"
-                    success "✓ Configuración agregada a ~/.${config_name}"
+                    success "Configuración agregada a ~/.${config_name}"
                     ((added_count++))
                 fi
             done

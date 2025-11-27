@@ -140,13 +140,13 @@ save_keys_to_files() {
     # Save SSH key
     if [[ -f "$HOME/.ssh/id_ed25519.pub" ]]; then
         cp "$HOME/.ssh/id_ed25519.pub" "$output_dir/ssh_public_key.txt"
-        success "✓ Llave SSH pública guardada en: $output_dir/ssh_public_key.txt"
+        success "Llave SSH pública guardada en: $output_dir/ssh_public_key.txt"
     fi
     
     # Save GPG key
     if [[ -n "$GPG_KEY_ID" ]]; then
         gpg --armor --export "$GPG_KEY_ID" > "$output_dir/gpg_public_key.txt"
-        success "✓ Llave GPG pública guardada en: $output_dir/gpg_public_key.txt"
+        success "Llave GPG pública guardada en: $output_dir/gpg_public_key.txt"
     fi
     
     # Create info file
@@ -167,7 +167,7 @@ INSTRUCCIONES:
 NOTA: Mantén estos archivos seguros y no los compartas públicamente.
 EOF
     
-    success "✓ Información guardada en: $output_dir/key_info.txt"
+    success "Información guardada en: $output_dir/key_info.txt"
     echo ""
     info "Directorio de exportación: $(c primary)$output_dir$(cr)"
     info "$(c muted)(Estas son las llaves públicas que debes agregar a GitHub)$(cr)"

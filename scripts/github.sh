@@ -185,7 +185,7 @@ ensure_github_cli_ready() {
             
             if gh auth login; then
                 echo ""
-                success "✓ Autenticación de GitHub CLI completada exitosamente"
+                success "Autenticación de GitHub CLI completada exitosamente"
                 return 0
             else
                 echo ""
@@ -309,7 +309,7 @@ upload_gpg_key_to_github() {
                 
                 if gh auth refresh -s write:gpg_key; then
                     echo ""
-                    success "✓ Permisos actualizados exitosamente"
+                    success "Permisos actualizados exitosamente"
                     echo ""
                 else
                     echo ""
@@ -446,7 +446,7 @@ maybe_upload_keys() {
     show_separator
     
     if [[ "$ssh_uploaded" == "true" ]] || [[ "$gpg_uploaded" == "true" ]]; then
-        success "✓ Subida de llaves completada"
+        success "Subida de llaves completada"
         echo ""
         if [[ "$ssh_uploaded" == "true" ]]; then
             info "  • Llave SSH: $(c success)Subida exitosamente$(cr)"
