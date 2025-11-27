@@ -90,8 +90,33 @@ show_progress_bar() {
     local total=$2
     local message="${3:-}"
     local width=50
-    local percentage=$((current * 100 / total))
-    local filled=$((current * width / total))
+    
+    # Calculate filled blocks directly from current/total ratio with proper rounding
+    # Formula: (current * width + total/2) / total
+    # This rounds to the nearest integer
+    local filled=$(( (current * width + total / 2) / total ))
+    
+    # Ensure filled is within valid range
+    if [[ $filled -gt $width ]]; then
+        filled=$width
+    fi
+    if [[ $filled -lt 0 ]]; then
+        filled=0
+    fi
+    
+    # Calculate percentage based on filled blocks to ensure exact visual match
+    # This ensures the percentage shown matches the visual bar exactly
+    # Formula: (filled * 100 + width/2) / width
+    local percentage=$(( (filled * 100 + width / 2) / width ))
+    
+    # Ensure percentage is within valid range
+    if [[ $percentage -gt 100 ]]; then
+        percentage=100
+    fi
+    if [[ $percentage -lt 0 ]]; then
+        percentage=0
+    fi
+    
     local empty=$((width - filled))
     
     # Build progress bar
