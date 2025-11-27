@@ -71,7 +71,7 @@ display_keys() {
     if [[ -n "$GPG_KEY_ID" ]]; then
         info "2. LLAVE GPG PÚBLICA (para agregar a GitHub):"
         echo ""
-        info "ID de la llave GPG: $(c primary)$GPG_KEY_ID$(cr)"
+        info "ID de la llave GPG: $(c bold)$(c primary)$GPG_KEY_ID$(cr)"
         echo ""
         
         local gpg_temp
@@ -102,16 +102,16 @@ display_keys() {
     info "Próximos pasos:"
     echo ""
     echo "  $(c bold)$(c warning)Para la llave SSH:$(cr)"
-    echo "    1. Ve a: $(c primary)https://github.com/settings/ssh/new$(cr)"
-    echo "    2. Pega la llave SSH mostrada arriba"
-    echo "    3. Dale un título descriptivo"
+    echo "    $(c bold)1.$(cr) Ve a: $(c bold)$(c primary)https://github.com/settings/ssh/new$(cr)"
+    echo "    $(c bold)2.$(cr) Pega la llave SSH mostrada arriba"
+    echo "    $(c bold)3.$(cr) Dale un título descriptivo"
     echo ""
     
     if [[ -n "$GPG_KEY_ID" ]]; then
         echo "  $(c bold)$(c warning)Para la llave GPG:$(cr)"
-        echo "    1. Ve a: $(c primary)https://github.com/settings/gpg/new$(cr)"
-        echo "    2. Pega la llave GPG mostrada arriba"
-        echo "    3. Tus commits aparecerán como 'Verified' ✓"
+        echo "    $(c bold)1.$(cr) Ve a: $(c bold)$(c primary)https://github.com/settings/gpg/new$(cr)"
+        echo "    $(c bold)2.$(cr) Pega la llave GPG mostrada arriba"
+        echo "    $(c bold)3.$(cr) Tus commits aparecerán como 'Verified' ✓"
         echo ""
     fi
     
@@ -196,9 +196,9 @@ show_final_instructions() {
     # Only show key addition steps if not uploaded automatically
     if [[ "$SSH_KEY_UPLOADED" != true ]]; then
         printf "%b\n" "$(c bold)$(c accent)🔐 PASO 1: AGREGAR LLAVE SSH$(cr)"
-        printf "%b\n" "$(c muted)$(cr)   ├─ $(c primary)URL:$(cr) $(c bold)https://github.com/settings/ssh/new$(cr)"
-        printf "%b\n" "$(c muted)$(cr)   ├─ $(c primary)Título sugerido:$(cr) $(hostname)-$(date +%Y%m%d)"
-        printf "%b\n" "$(c muted)$(cr)   └─ $(c warning)Pega la llave SSH pública que se mostró arriba$(cr)"
+        printf "%b\n" "$(c muted)$(cr)   ├─ $(c bold)$(c primary)URL:$(cr) $(c bold)https://github.com/settings/ssh/new$(cr)"
+        printf "%b\n" "$(c muted)$(cr)   ├─ $(c bold)$(c primary)Título sugerido:$(cr) $(c bold)$(hostname)-$(date +%Y%m%d)$(cr)"
+        printf "%b\n" "$(c muted)$(cr)   └─ $(c bold)$(c warning)Pega la llave SSH pública que se mostró arriba$(cr)"
         echo ""
     else
         printf "%b\n" "$(c bold)$(c accent)🔐 PASO 1: LLAVE SSH$(cr)"
@@ -209,8 +209,8 @@ show_final_instructions() {
     if [[ "$GPG_KEY_UPLOADED" != true ]]; then
         if [[ -n "$GPG_KEY_ID" ]]; then
             printf "%b\n" "$(c bold)$(c accent)🔑 PASO 2: AGREGAR LLAVE GPG (Opcional)$(cr)"
-            printf "%b\n" "$(c muted)$(cr)   ├─ $(c primary)URL:$(cr) $(c bold)https://github.com/settings/gpg/new$(cr)"
-            printf "%b\n" "$(c muted)$(cr)   ├─ $(c warning)Pega la llave GPG pública que se mostró arriba$(cr)"
+            printf "%b\n" "$(c muted)$(cr)   ├─ $(c bold)$(c primary)URL:$(cr) $(c bold)https://github.com/settings/gpg/new$(cr)"
+            printf "%b\n" "$(c muted)$(cr)   ├─ $(c bold)$(c warning)Pega la llave GPG pública que se mostró arriba$(cr)"
             printf "%b\n" "$(c muted)$(cr)   └─ $(c muted)Esto permitirá que tus commits aparezcan como 'Verified'$(cr)"
             echo ""
         fi
@@ -229,9 +229,9 @@ show_final_instructions() {
     fi
     
     printf "%b\n" "$(c bold)$(c accent)✅ PASO ${paso_num}: VERIFICAR CONFIGURACIÓN$(cr)"
-    printf "%b\n" "$(c muted)$(cr)   ├─ $(c primary)Probar SSH:$(cr) $(c bold)$(c success)ssh -T git@github.com$(cr)"
+    printf "%b\n" "$(c muted)$(cr)   ├─ $(c bold)$(c primary)Probar SSH:$(cr) $(c bold)$(c success)ssh -T git@github.com$(cr)"
     printf "%b\n" "$(c muted)$(cr)   │  $(c muted)→ Deberías ver: 'Hi username! You've successfully authenticated...'$(cr)"
-    printf "%b\n" "$(c muted)$(cr)   └─ $(c primary)Probar GPG:$(cr) $(c muted)Haz un commit y verifica el badge 'Verified' en GitHub$(cr)"
+    printf "%b\n" "$(c muted)$(cr)   └─ $(c bold)$(c primary)Probar GPG:$(cr) $(c muted)Haz un commit y verifica el badge 'Verified' en GitHub$(cr)"
     echo ""
     echo ""
     
@@ -246,18 +246,18 @@ show_final_instructions() {
     
     ((paso_num++))
     printf "%b\n" "$(c bold)$(c accent)🔐 PASO ${paso_num}: CREDENTIAL MANAGER$(cr)"
-    printf "%b\n" "$(c muted)$(cr)   ├─ $(c success)✓$(cr) Git Credential Manager configurado"
+    printf "%b\n" "$(c muted)$(cr)   ├─ $(c bold)$(c success)✓$(cr) $(c bold)Git Credential Manager configurado$(cr)"
     printf "%b\n" "$(c muted)$(cr)   ├─ $(c muted)No se solicitará contraseña en cada operación$(cr)"
-    printf "%b\n" "$(c muted)$(cr)   ├─ $(c warning)En el primer push, se abrirá el navegador para autenticar$(cr)"
-    printf "%b\n" "$(c muted)$(cr)   └─ $(c primary)Pre-autenticar (opcional):$(cr) $(c bold)$(c success)git-credential-manager github login$(cr)"
+    printf "%b\n" "$(c muted)$(cr)   ├─ $(c bold)$(c warning)En el primer push, se abrirá el navegador para autenticar$(cr)"
+    printf "%b\n" "$(c muted)$(cr)   └─ $(c bold)$(c primary)Pre-autenticar (opcional):$(cr) $(c bold)$(c success)git-credential-manager github login$(cr)"
     echo ""
     echo ""
     
     printf "%b\n" "$(c bold)$(c accent)💡 COMANDOS ÚTILES:$(cr)"
-    printf "%b\n" "$(c muted)$(cr)   ├─ $(c primary)Ver configuración Git:$(cr)    $(c bold)git config --list --show-origin$(cr)"
-    printf "%b\n" "$(c muted)$(cr)   ├─ $(c primary)Ver llaves SSH:$(cr)          $(c bold)ls -la ~/.ssh/$(cr)"
-    printf "%b\n" "$(c muted)$(cr)   ├─ $(c primary)Ver llaves GPG:$(cr)          $(c bold)gpg --list-secret-keys --keyid-format=long$(cr)"
-    printf "%b\n" "$(c muted)$(cr)   └─ $(c primary)Ver logs del script:$(cr)     $(c bold)cat $LOG_FILE$(cr)"
+    printf "%b\n" "$(c muted)$(cr)   ├─ $(c bold)$(c primary)Ver configuración Git:$(cr)    $(c bold)git config --list --show-origin$(cr)"
+    printf "%b\n" "$(c muted)$(cr)   ├─ $(c bold)$(c primary)Ver llaves SSH:$(cr)          $(c bold)ls -la ~/.ssh/$(cr)"
+    printf "%b\n" "$(c muted)$(cr)   ├─ $(c bold)$(c primary)Ver llaves GPG:$(cr)          $(c bold)gpg --list-secret-keys --keyid-format=long$(cr)"
+    printf "%b\n" "$(c muted)$(cr)   └─ $(c bold)$(c primary)Ver logs del script:$(cr)     $(c bold)cat $LOG_FILE$(cr)"
     echo ""
     
     show_separator

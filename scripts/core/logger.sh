@@ -51,7 +51,7 @@ log() {
 #   success "SSH key generated successfully"
 success() {
     local message="$1"
-    printf "%b\n" "$(c success)✓ $message$(cr)"
+    printf "%b\n" "$(c bold)$(c success)✓ $message$(cr)"
     log "SUCCESS: $message"
 }
 
@@ -61,7 +61,7 @@ success() {
 #   error "Failed to generate SSH key"
 error() {
     local message="$1"
-    printf "%b\n" "$(c error)✗ ERROR: $message$(cr)" >&2
+    printf "%b\n" "$(c bold)$(c error)✗ ERROR: $message$(cr)" >&2
     log "ERROR: $message"
 }
 
@@ -71,7 +71,7 @@ error() {
 #   warning "SSH key already exists"
 warning() {
     local message="$1"
-    printf "%b\n" "$(c warning)⚠ WARNING: $message$(cr)"
+    printf "%b\n" "$(c bold)$(c warning)⚠ WARNING: $message$(cr)"
     log "WARNING: $message"
 }
 
@@ -81,7 +81,7 @@ warning() {
 #   info "Checking for existing keys..."
 info() {
     local message="$1"
-    printf "%b\n" "$(c info)ℹ $message$(cr)"
+    printf "%b\n" "$(c bold)$(c info)ℹ $message$(cr)"
     log "INFO: $message"
 }
 

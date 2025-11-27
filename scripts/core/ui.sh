@@ -302,11 +302,11 @@ welcome() {
     # Welcome message
     printf "%b\n" "$(c bold)$(c text)Bienvenido al configurador de Git$(cr)"
     printf "%b\n" "$(c muted)Este script configurará:$(cr)"
-    printf "%b\n" "  $(c success)•$(cr) Llaves SSH para autenticación con GitHub"
-    printf "%b\n" "  $(c success)•$(cr) Llaves GPG para firmar commits (opcional)"
-    printf "%b\n" "  $(c success)•$(cr) Configurar tu archivo $(c primary).gitconfig$(cr) con nombre, email y preferencias recomendadas"
-    printf "%b\n" "  $(c success)•$(cr) Git Credential Manager"
-    printf "%b\n" "  $(c success)•$(cr) GitHub CLI (gh)"
+    printf "%b\n" "  $(c bold)$(c success)•$(cr) $(c bold)Llaves SSH para autenticación con GitHub$(cr)"
+    printf "%b\n" "  $(c bold)$(c success)•$(cr) $(c bold)Llaves GPG para firmar commits (opcional)$(cr)"
+    printf "%b\n" "  $(c bold)$(c success)•$(cr) $(c bold)Configurar tu archivo $(c primary).gitconfig$(cr) con nombre, email y preferencias recomendadas$(cr)"
+    printf "%b\n" "  $(c bold)$(c success)•$(cr) $(c bold)Git Credential Manager$(cr)"
+    printf "%b\n" "  $(c bold)$(c success)•$(cr) $(c bold)GitHub CLI (gh)$(cr)"
     
     # Display separator
     show_separator

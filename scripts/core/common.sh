@@ -213,7 +213,7 @@ backup_existing_keys() {
     if [[ ${#existing_keys[@]} -gt 0 ]]; then
         warning "Se encontraron ${#existing_keys[@]} llave(s) SSH existente(s):"
         for file in "${existing_keys[@]}"; do
-            echo "  • $(basename "$file")"
+            echo "  $(c bold)•$(cr) $(c bold)$(basename "$file")$(cr)"
         done
         echo ""
         

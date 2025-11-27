@@ -48,7 +48,7 @@ collect_user_info() {
     
     # Get user name
     if [[ -n "$existing_name" ]]; then
-        info "Nombre actual en Git: $(c primary)$existing_name$(cr)"
+        info "Nombre actual en Git: $(c bold)$(c primary)$existing_name$(cr)"
         if ask_yes_no "¿Deseas usar este nombre?"; then
             USER_NAME="$existing_name"
         else
@@ -65,7 +65,7 @@ collect_user_info() {
     
     # Get user email
     if [[ -n "$existing_email" ]]; then
-        info "Email actual en Git: $(c primary)$existing_email$(cr)"
+        info "Email actual en Git: $(c bold)$(c primary)$existing_email$(cr)"
         if ask_yes_no "¿Deseas usar este email?"; then
             USER_EMAIL="$existing_email"
         else
@@ -93,8 +93,8 @@ collect_user_info() {
     if [[ "$INTERACTIVE_MODE" == "true" ]]; then
         echo ""
         info "Selecciona la rama por defecto para nuevos repositorios:"
-        echo "  1. $(c primary)master$(cr) - Rama tradicional"
-        echo "  2. $(c primary)main$(cr) - Rama moderna (recomendada)"
+        echo "  1. $(c bold)$(c primary)master$(cr) - $(c bold)Rama tradicional$(cr)"
+        echo "  2. $(c bold)$(c primary)main$(cr) - $(c bold)Rama moderna (recomendada)$(cr)"
         echo ""
         
         local branch_choice
@@ -129,9 +129,9 @@ collect_user_info() {
     
     echo ""
     success "Información recopilada:"
-    echo "  Nombre: $(c primary)$USER_NAME$(cr)"
-    echo "  Email:  $(c primary)$USER_EMAIL$(cr)"
-    echo "  Rama default: $(c primary)$GIT_DEFAULT_BRANCH$(cr)"
+    echo "  $(c bold)Nombre:$(cr) $(c bold)$(c primary)$USER_NAME$(cr)"
+    echo "  $(c bold)Email:$(cr)  $(c bold)$(c primary)$USER_EMAIL$(cr)"
+    echo "  $(c bold)Rama default:$(cr) $(c bold)$(c primary)$GIT_DEFAULT_BRANCH$(cr)"
     echo ""
     echo ""
     
@@ -216,34 +216,34 @@ show_changes_summary() {
             ;;
     esac
     
-    printf "  $(c primary)Nombre:$(cr)        $USER_NAME\n"
-    printf "  $(c primary)Email:$(cr)         $USER_EMAIL\n"
-    printf "  $(c primary)Rama default:$(cr)  ${GIT_DEFAULT_BRANCH:-main}\n"
+    printf "  $(c bold)$(c primary)Nombre:$(cr)        $(c bold)$USER_NAME$(cr)\n"
+    printf "  $(c bold)$(c primary)Email:$(cr)         $(c bold)$USER_EMAIL$(cr)\n"
+    printf "  $(c bold)$(c primary)Rama default:$(cr)  $(c bold)${GIT_DEFAULT_BRANCH:-main}$(cr)\n"
     if [[ "${GENERATE_GPG:-false}" == "true" ]]; then
         if [[ -n "$GPG_KEY_ID" ]]; then
-            printf "  $(c primary)GPG signing:$(cr)   $(c success)true$(cr) $(c muted)(usando llave existente: ${GPG_KEY_ID})$(cr)\n"
+            printf "  $(c bold)$(c primary)GPG signing:$(cr)   $(c bold)$(c success)true$(cr) $(c muted)(usando llave existente: $(c bold)${GPG_KEY_ID}$(cr)$(c muted))$(cr)\n"
         else
-            printf "  $(c primary)GPG signing:$(cr)   $(c success)true$(cr) $(c muted)(se generará nueva llave)$(cr)\n"
+            printf "  $(c bold)$(c primary)GPG signing:$(cr)   $(c bold)$(c success)true$(cr) $(c muted)(se generará nueva llave)$(cr)\n"
         fi
     else
-        printf "  $(c primary)GPG signing:$(cr)   $(c warning)false$(cr)\n"
+        printf "  $(c bold)$(c primary)GPG signing:$(cr)   $(c bold)$(c warning)false$(cr)\n"
     fi
-    printf "  $(c primary)Credential:$(cr)    $credential_helper\n"
+    printf "  $(c bold)$(c primary)Credential:$(cr)    $(c bold)$credential_helper$(cr)\n"
     
     echo ""
     printf "%b\n" "$(c bold)$(c accent)📝 Notas importantes:$(cr)"
     echo ""
     if [[ -f "$HOME/.gitconfig" ]]; then
-        printf "  $(c muted)•$(cr) Se creará un backup de tu $(c primary).gitconfig$(cr) actual antes de modificarlo\n"
+        printf "  $(c muted)•$(cr) Se creará un backup de tu $(c bold)$(c primary).gitconfig$(cr) actual antes de modificarlo\n"
     fi
     if [[ -f "$HOME/.ssh/id_ed25519" ]]; then
-        printf "  $(c muted)•$(cr) Las llaves SSH existentes serán $(c warning)sobrescritas$(cr)\n"
+        printf "  $(c muted)•$(cr) Las llaves SSH existentes serán $(c bold)$(c warning)sobrescritas$(cr)\n"
     fi
     if [[ "${GENERATE_GPG:-false}" == "true" ]] && [[ -n "$GPG_KEY_ID" ]]; then
-        printf "  $(c muted)•$(cr) Se usará tu llave GPG existente $(c primary)($GPG_KEY_ID)$(cr)\n"
+        printf "  $(c muted)•$(cr) Se usará tu llave GPG existente $(c bold)$(c primary)($GPG_KEY_ID)$(cr)\n"
     fi
     if [[ "${AUTO_UPLOAD_KEYS:-false}" == "true" ]]; then
-        printf "  $(c muted)•$(cr) Las llaves se subirán automáticamente a GitHub $(c success)(--auto-upload activo)$(cr)\n"
+        printf "  $(c muted)•$(cr) Las llaves se subirán automáticamente a GitHub $(c bold)$(c success)(--auto-upload activo)$(cr)\n"
     fi
     echo ""
     show_separator

@@ -82,9 +82,9 @@ check_optional_dependencies() {
     
     for dep in "${optional_deps[@]}"; do
         if command -v "$dep" &> /dev/null; then
-            printf "  $(c success)✓$(cr) %s\n" "$dep"
+            printf "  $(c bold)$(c success)✓$(cr) $(c bold)%s$(cr)\n" "$dep"
         else
-            printf "  $(c muted)○$(cr) %s $(c muted)(no instalado)$(cr)\n" "$dep"
+            printf "  $(c muted)○$(cr) $(c bold)%s$(cr) $(c muted)(no instalado)$(cr)\n" "$dep"
         fi
     done
 }
