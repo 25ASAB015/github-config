@@ -11,6 +11,7 @@
 # Globals:
 #   COLORS              Associative array of color escape codes
 #   WORKFLOW_STEPS      Associative array of workflow step descriptions
+#   EMAIL_REGEX         Email validation regex pattern
 #   SCRIPT_DIR          Directory containing the main script
 #   LOG_FILE            Path to log file
 #   DEBUG               Enable debug output (true/false)
@@ -22,6 +23,10 @@
 #   USER_NAME           Git user name
 #   USER_EMAIL          Git user email
 #   GPG_KEY_ID          GPG key ID for signing commits
+#   GENERATE_GPG        Whether to generate GPG key (true/false)
+#   GIT_DEFAULT_BRANCH  Default Git branch name (main/master)
+#   TOTAL_STEPS         Total number of workflow steps
+#   CURRENT_STEP        Current step in workflow
 #
 # Arguments:
 #   None
@@ -119,8 +124,12 @@ GPG_KEY_UPLOADED="${GPG_KEY_UPLOADED:-false}"
 USER_NAME="${USER_NAME:-}"
 USER_EMAIL="${USER_EMAIL:-}"
 
-# GPG key ID (set after key generation)
+# GPG configuration
 GPG_KEY_ID="${GPG_KEY_ID:-}"
+GENERATE_GPG="${GENERATE_GPG:-false}"
+
+# Git configuration
+GIT_DEFAULT_BRANCH="${GIT_DEFAULT_BRANCH:-main}"
 
 #==============================================================================
 # PROGRESS TRACKING

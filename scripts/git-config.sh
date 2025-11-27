@@ -263,6 +263,59 @@ show_changes_summary() {
 # GIT CONFIGURATION
 #==============================================================================
 
+# @description Clean up duplicate credential helper entries in .gitconfig
+# @param $1 gitconfig_path - Path to .gitconfig file
+# @return 0 on success, 1 on failure
+# @example
+#   cleanup_credential_duplicates "$HOME/.gitconfig"
+cleanup_credential_duplicates() {
+    local gitconfig_path="$1"
+    
+    if [[ ! -f "$gitconfig_path" ]]; then
+        return 1
+    fi
+    
+    # Use awk to process the file and remove duplicate helper entries
+    # Keep only the first non-empty helper entry in the [credential] section
+    awk '
+    BEGIN {
+        in_credential = 0
+        helper_found = 0
+    }
+    /^\[credential\]/ {
+        in_credential = 1
+        helper_found = 0
+        print
+        next
+    }
+    /^\[/ {
+        in_credential = 0
+        helper_found = 0
+        print
+        next
+    }
+    in_credential && /^[[:space:]]*helper[[:space:]]*=/ {
+        if (helper_found == 0) {
+            # Keep the first helper entry (even if empty, we'll clean it later)
+            helper_value = $0
+            gsub(/^[[:space:]]*helper[[:space:]]*=[[:space:]]*/, "", helper_value)
+            gsub(/[[:space:]]*$/, "", helper_value)
+            if (helper_value != "") {
+                print $0
+                helper_found = 1
+            }
+            # If empty, skip it (don't print)
+        }
+        # Skip all subsequent helper entries (duplicates)
+        next
+    }
+    {
+        print
+    }
+    ' "$gitconfig_path" > "${gitconfig_path}.tmp" && \
+    mv "${gitconfig_path}.tmp" "$gitconfig_path"
+}
+
 # @description Configure Git with generated settings
 # @return 0 on success, 1 on failure
 # @example
@@ -279,14 +332,18 @@ configure_git() {
     }
     
     # Configure Git Credential Manager if available
+    # Note: We already configured the helper in generate_gitconfig with the full path,
+    # so git-credential-manager configure should not add duplicates. However, we run it
+    # to ensure any additional configuration is set up correctly.
     if command -v git-credential-manager &> /dev/null; then
-        info "Configurando Git Credential Manager..."
+        info "Verificando configuración de Git Credential Manager..."
         
+        # Run configure (it should detect existing config and not duplicate)
         if git-credential-manager configure &>/dev/null; then
-            success "Git Credential Manager configurado automáticamente"
+            # Clean up any potential duplicates that might have been added
+            cleanup_credential_duplicates "$HOME/.gitconfig"
+            success "Git Credential Manager configurado correctamente"
         fi
-        
-        success "Git Credential Manager listo para usar"
     fi
     
     success "Configuración Git completada exitosamente"
@@ -318,6 +375,7 @@ generate_gitconfig() {
     
     # Determine credential helper
     local credential_helper="manager"
+    local credential_helper_path=""
     local os_type
     os_type=$(uname -s)
     
@@ -325,11 +383,17 @@ generate_gitconfig() {
         "Darwin")
             if ! command -v git-credential-manager &> /dev/null; then
                 credential_helper="osxkeychain"
+            else
+                # Use full path to avoid duplicates when git-credential-manager configure runs
+                credential_helper_path=$(command -v git-credential-manager)
             fi
             ;;
         "Linux")
             if ! command -v git-credential-manager &> /dev/null; then
                 credential_helper="store"
+            else
+                # Use full path to avoid duplicates when git-credential-manager configure runs
+                credential_helper_path=$(command -v git-credential-manager)
             fi
             ;;
     esac
@@ -351,9 +415,10 @@ generate_gitconfig() {
 	gpgsign = true"; fi)
 	template = ~/.gitmessage
 
-[credential]
-	helper = $credential_helper$(if [[ "$os_type" == "Linux" ]] && [[ "$credential_helper" == "manager" ]]; then echo "
-	credentialStore = secretservice"; fi)
+[credential]$(if [[ -n "$credential_helper_path" ]]; then echo "
+	helper = $credential_helper_path$(if [[ "$os_type" == "Linux" ]]; then echo "
+	credentialStore = secretservice"; fi)"; else echo "
+	helper = $credential_helper"; fi)
 
 [init]
 	defaultBranch = ${GIT_DEFAULT_BRANCH:-main}
