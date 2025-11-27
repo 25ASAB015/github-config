@@ -123,19 +123,24 @@ show_progress_bar() {
 # @description Ask a yes/no question and return the response
 # @param $1 prompt - Question to ask
 # @param $2 default - Default answer (y/n), defaults to 'y'
+# @param $3 exit_on_no - If "true", exit script when user says no
 # @return 0 if yes, 1 if no
 # @example
 #   if ask_yes_no "Continue?" "y"; then
 #       echo "User said yes"
 #   fi
+#   ask_yes_no "Continue?" "n" "true"  # exits if user says no
 ask_yes_no() {
     local prompt="$1"
     local default="${2:-y}"
+    local exit_on_no="${3:-false}"
     local response
     
     # In non-interactive mode, use default
     if [[ "$INTERACTIVE_MODE" != "true" ]]; then
-        [[ "$default" == "y" || "$default" == "Y" ]]
+        local answer="$default"
+        log "AUTO-ANSWER: $prompt -> $answer"
+        [[ "$answer" == "y" || "$answer" == "Y" ]]
         return $?
     fi
     
@@ -149,7 +154,7 @@ ask_yes_no() {
     
     # Keep asking until we get a valid response
     while true; do
-        printf "%b " "$(c accent)$prompt$(cr) $(c muted)$prompt_indicator$(cr)"
+        printf " %b " "$(c bold)$(c success)$prompt$(cr) $prompt_indicator:"
         read -r response
         
         # Use default if empty response
@@ -162,10 +167,15 @@ ask_yes_no() {
                 return 0
                 ;;
             [nN]|[nN][oO])
-                return 1
+                if [[ "$exit_on_no" == "true" ]]; then
+                    printf "\n%b\n" "$(c bold)$(c warning)Operación cancelada$(cr)"
+                    exit 0
+                else
+                    return 1
+                fi
                 ;;
             *)
-                printf "%b\n" "$(c warning)Por favor responde 'y' (sí) o 'n' (no)$(cr)"
+                printf "\n%b\n\n" "$(c bold)$(c error)Error:$(cr) Solo escribe '$(c bold)$(c warning)s$(cr)', '$(c bold)$(c warning)n$(cr)', '$(c bold)$(c warning)y$(cr)' o '$(c bold)$(c warning)N$(cr)'"
                 ;;
         esac
     done
@@ -232,14 +242,34 @@ show_help() {
 # @example
 #   welcome
 welcome() {
+    clear
     logo
-    show_separator
-    printf "%b\n" "$(c bold)$(c text)Bienvenido al configurador de Git$(cr)"
-    printf "%b\n" "$(c muted)Este script configurará:$(cr)"
-    printf "%b\n" "  $(c success)•$(cr) Llaves SSH para autenticación con GitHub"
-    printf "%b\n" "  $(c success)•$(cr) Llaves GPG para firmar commits (opcional)"
-    printf "%b\n" "  $(c success)•$(cr) Configuración profesional de Git"
-    printf "%b\n" "  $(c success)•$(cr) Git Credential Manager"
-    show_separator
-    echo ""
+    
+    printf "%b" "$(c bold)$(c success)Este script te ayudará a dejar lista tu configuración de Git y GitHub:$(cr)
+
+  $(c bold)$(c success)[$(c warning)i$(c success)]$(cr) Generar y/o registrar tu clave SSH para GitHub
+  $(c bold)$(c success)[$(c warning)i$(c success)]$(cr) Generar una clave GPG para firmar tus commits
+  $(c bold)$(c success)[$(c warning)i$(c success)]$(cr) Configurar tu archivo $(c primary).gitconfig$(cr) con nombre, email y preferencias recomendadas
+  $(c bold)$(c success)[$(c warning)i$(c success)]$(cr) Instalar y/o autenticar $(c primary)GitHub CLI (gh)$(cr)
+  $(c bold)$(c success)[$(c warning)i$(c success)]$(cr) Instalar y configurar $(c primary)GitKraken CLI (gk)$(cr)
+
+$(c bold)$(c success)[$(c error)!$(c success)]$(cr) $(c bold)$(c error)Este script NO realiza cambios peligrosos en tu sistema$(cr)
+$(c bold)$(c success)[$(c error)!$(c success)]$(cr) $(c bold)$(c error)Solo edita configuraciones relacionadas a Git y GitHub en tu usuario$(cr)
+
+"
+    
+    # Mostrar información sobre modo no-interactivo si está activo
+    if [[ "$INTERACTIVE_MODE" == "false" ]]; then
+        echo ""
+        printf "%b\n" "$(c bold)$(c accent)ℹ️  MODO NO-INTERACTIVO ACTIVO$(cr)"
+        if [[ -n "${USER_EMAIL:-}" ]] && [[ -n "${USER_NAME:-}" ]]; then
+            printf "%b\n" "$(c muted)   Usando: $(c primary)USER_EMAIL=${USER_EMAIL}$(c muted), $(c primary)USER_NAME=${USER_NAME}$(cr)"
+        else
+            printf "%b\n" "$(c warning)   ⚠️  ADVERTENCIA: USER_EMAIL y USER_NAME deben estar definidos$(cr)"
+            printf "%b\n" "$(c muted)   Ejemplo: $(c primary)USER_EMAIL=\"tu@email.com\" USER_NAME=\"Tu Nombre\" ./gitconfig.sh --non-interactive$(cr)"
+        fi
+        echo ""
+    fi
+    
+    ask_yes_no "¿Deseas continuar?" "n" "true"
 }
