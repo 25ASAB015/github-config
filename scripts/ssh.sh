@@ -47,6 +47,7 @@ generate_ssh_key() {
         
         if ask_yes_no "¿Deseas usar la llave existente?" "y"; then
             success "Usando llave SSH existente"
+            echo ""
             return 0
         fi
         
@@ -197,13 +198,16 @@ EOF
                 echo ""
                 success "Configuración agregada a ${added_count} archivo(s)"
                 info "Reinicia tu terminal o ejecuta: $(c primary)source ~/.bashrc$(cr) / $(c primary)source ~/.zshrc$(cr)"
+                echo ""
             fi
         else
             info "Configuración no agregada. Puedes agregarla manualmente usando el código mostrado arriba"
+            echo ""
         fi
     else
         warning "No se encontraron archivos ~/.bashrc ni ~/.zshrc"
         info "Crea uno de estos archivos y agrega manualmente la configuración mostrada arriba"
+        echo ""
     fi
     
     # Cleanup

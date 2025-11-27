@@ -192,6 +192,7 @@ main() {
         if [[ -n "$GPG_KEY_ID" ]]; then
             info "Usando llave GPG existente: $GPG_KEY_ID"
             success "Llave GPG configurada correctamente"
+            echo ""
         else
             generate_gpg_key
         fi
@@ -211,15 +212,18 @@ main() {
     
     # Display and upload keys
     display_keys
+    echo ""
     maybe_upload_keys
     
     # Save keys to files if requested
     if ask_yes_no "¿Deseas exportar las llaves públicas a archivos para agregarlas a GitHub?"; then
         save_keys_to_files
     fi
+    echo ""
     
     # Test connectivity
     test_github_connection
+    echo ""
     
     # Step 9: Show final instructions
     CURRENT_STEP=$((CURRENT_STEP + 1))

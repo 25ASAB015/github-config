@@ -133,6 +133,7 @@ collect_user_info() {
     echo "  Email:  $(c primary)$USER_EMAIL$(cr)"
     echo "  Rama default: $(c primary)$GIT_DEFAULT_BRANCH$(cr)"
     echo ""
+    echo ""
     
     log "User info collected: $USER_NAME <$USER_EMAIL>, default branch: $GIT_DEFAULT_BRANCH"
     return 0
@@ -247,12 +248,14 @@ show_changes_summary() {
     echo ""
     show_separator
     echo ""
+    echo ""
     
     if ! ask_yes_no "¿Deseas continuar con estos cambios?" "y"; then
         info "Operación cancelada por el usuario"
         return 1
     fi
     
+    echo ""
     return 0
 }
 
@@ -289,6 +292,7 @@ configure_git() {
     success "Configuración Git completada exitosamente"
     echo ""
     info "Puedes ver tu configuración con: $(c primary)git config --global --list$(cr)"
+    echo ""
     
     return 0
 }

@@ -59,6 +59,7 @@ display_keys() {
         
         if ask_yes_no "¿Deseas copiar la llave SSH al portapapeles?"; then
             copy_to_clipboard "$HOME/.ssh/id_ed25519.pub"
+            echo ""
         fi
     else
         error "No se encontró la llave SSH pública en $HOME/.ssh/id_ed25519.pub"
@@ -84,6 +85,7 @@ display_keys() {
             
             if ask_yes_no "¿Deseas copiar la llave GPG al portapapeles?"; then
                 copy_to_clipboard "$gpg_temp"
+                echo ""
             fi
         else
             error "No se pudo exportar la llave GPG"
@@ -96,6 +98,7 @@ display_keys() {
     
     echo ""
     show_separator
+    echo ""
     info "Próximos pasos:"
     echo ""
     echo "  $(c bold)$(c warning)Para la llave SSH:$(cr)"
@@ -113,6 +116,7 @@ display_keys() {
     fi
     
     show_separator
+    echo ""
 }
 
 #==============================================================================
@@ -167,6 +171,7 @@ EOF
     echo ""
     info "Directorio de exportación: $(c primary)$output_dir$(cr)"
     info "$(c muted)(Estas son las llaves públicas que debes agregar a GitHub)$(cr)"
+    echo ""
 }
 
 #==============================================================================
@@ -228,6 +233,7 @@ show_final_instructions() {
     printf "%b\n" "$(c muted)$(cr)   │  $(c muted)→ Deberías ver: 'Hi username! You've successfully authenticated...'$(cr)"
     printf "%b\n" "$(c muted)$(cr)   └─ $(c primary)Probar GPG:$(cr) $(c muted)Haz un commit y verifica el badge 'Verified' en GitHub$(cr)"
     echo ""
+    echo ""
     
     ((paso_num++))
     printf "%b\n" "$(c bold)$(c accent)📁 PASO ${paso_num}: ARCHIVOS GENERADOS$(cr)"
@@ -236,6 +242,7 @@ show_final_instructions() {
     printf "%b\n" "$(c muted)$(cr)   ├─ $(c bold)$(c primary)~/.ssh/config$(cr)    $(c muted)→ Configuración SSH optimizada$(cr)"
     printf "%b\n" "$(c muted)$(cr)   └─ $(c bold)$(c primary)~/.ssh/id_ed25519$(cr) $(c muted)→ Tu llave SSH privada (¡nunca la compartas!)$(cr)"
     echo ""
+    echo ""
     
     ((paso_num++))
     printf "%b\n" "$(c bold)$(c accent)🔐 PASO ${paso_num}: CREDENTIAL MANAGER$(cr)"
@@ -243,6 +250,7 @@ show_final_instructions() {
     printf "%b\n" "$(c muted)$(cr)   ├─ $(c muted)No se solicitará contraseña en cada operación$(cr)"
     printf "%b\n" "$(c muted)$(cr)   ├─ $(c warning)En el primer push, se abrirá el navegador para autenticar$(cr)"
     printf "%b\n" "$(c muted)$(cr)   └─ $(c primary)Pre-autenticar (opcional):$(cr) $(c bold)$(c success)git-credential-manager github login$(cr)"
+    echo ""
     echo ""
     
     printf "%b\n" "$(c bold)$(c accent)💡 COMANDOS ÚTILES:$(cr)"

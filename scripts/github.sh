@@ -464,6 +464,7 @@ maybe_upload_keys() {
     
     show_separator
     echo ""
+    echo ""
 }
 
 #==============================================================================
@@ -492,10 +493,12 @@ test_github_connection() {
         if [[ $ssh_exit_code -eq 1 ]] && [[ $ssh_output == *"successfully authenticated"* ]]; then
             success "¡Conexión SSH con GitHub exitosa!"
             printf "%b\n" "$(c success)$ssh_output$(cr)"
+            echo ""
         else
             warning "La conexión SSH falló o está pendiente de configuración"
             printf "%b\n" "$(c warning)Salida: $ssh_output$(cr)"
             printf "%b\n" "$(c primary)Asegúrate de haber agregado la llave SSH a tu cuenta de GitHub$(cr)"
+            echo ""
         fi
     fi
 }
