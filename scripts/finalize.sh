@@ -179,9 +179,8 @@ EOF
 show_final_instructions() {
     echo ""
     show_separator
-    printf "%b\n" "$(c bold)$(c secondary)╔══════════════════════════════════════════════════════════════════════════════╗$(cr)"
-    printf "%b\n" "$(c bold)$(c secondary)║$(cr)  $(c bold)$(c text)📚  INSTRUCCIONES FINALES PARA GITHUB$(cr)                                    $(c bold)$(c secondary)║$(cr)"
-    printf "%b\n" "$(c bold)$(c secondary)╚══════════════════════════════════════════════════════════════════════════════╝$(cr)"
+    printf "%b\n" "$(c bold)$(c accent)📚 INSTRUCCIONES FINALES PARA GITHUB$(cr)"
+    show_separator
     echo ""
     
     if [[ "$SSH_KEY_UPLOADED" == true ]] || [[ "$GPG_KEY_UPLOADED" == true ]]; then
