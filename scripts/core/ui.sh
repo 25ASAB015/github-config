@@ -286,6 +286,7 @@ welcome() {
     printf "%b\n" "  $(c success)•$(cr) Llaves GPG para firmar commits (opcional)"
     printf "%b\n" "  $(c success)•$(cr) Configurar tu archivo $(c primary).gitconfig$(cr) con nombre, email y preferencias recomendadas"
     printf "%b\n" "  $(c success)•$(cr) Git Credential Manager"
+    printf "%b\n" "  $(c success)•$(cr) GitHub CLI (gh)"
     
     # Display separator
     show_separator
