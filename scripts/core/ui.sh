@@ -131,39 +131,30 @@ show_progress_bar() {
 #   fi
 #   ask_yes_no "Continue?" "n" "true"  # exits if user says no
 ask_yes_no() {
-    echo "[DEBUG] ask_yes_no() - INICIO"
     local prompt="$1"
     local default="${2:-y}"
     local exit_on_no="${3:-false}"
     local response
     
-    echo "[DEBUG] ask_yes_no() - prompt='$prompt', default='$default', exit_on_no='$exit_on_no'"
-    echo "[DEBUG] ask_yes_no() - INTERACTIVE_MODE='$INTERACTIVE_MODE'"
-    
     # In non-interactive mode, use default
     if [[ "$INTERACTIVE_MODE" != "true" ]]; then
-        echo "[DEBUG] ask_yes_no() - Modo no-interactivo, usando default"
         local answer="$default"
         log "AUTO-ANSWER: $prompt -> $answer"
         
         # Check if answer is yes
         if [[ "$answer" == "y" || "$answer" == "Y" ]]; then
-            echo "[DEBUG] ask_yes_no() - Default es 'y', retornando 0"
             return 0
         else
-            echo "[DEBUG] ask_yes_no() - Default es 'n', checkeando exit_on_no"
             # Answer is no - check if we should exit
             if [[ "$exit_on_no" == "true" ]]; then
                 printf "\n%b\n" "$(c bold)$(c warning)Operación cancelada$(cr)"
                 exit 0
             else
-                echo "[DEBUG] ask_yes_no() - Retornando 1 (no exit)"
                 return 1
             fi
         fi
     fi
     
-    echo "[DEBUG] ask_yes_no() - Modo interactivo, preparando prompt"
     # Format prompt with default indicator
     local prompt_indicator
     if [[ "$default" == "y" || "$default" == "Y" ]]; then
@@ -172,37 +163,30 @@ ask_yes_no() {
         prompt_indicator="[y/N]"
     fi
     
-    echo "[DEBUG] ask_yes_no() - Entrando al loop de lectura"
     # Keep asking until we get a valid response
     while true; do
         printf " %b " "$(c bold)$(c success)$prompt$(cr) $prompt_indicator:"
         read -r response
-        echo "[DEBUG] ask_yes_no() - Usuario ingresó: '$response'"
         
         # Use default if empty response
         if [[ -z "$response" ]]; then
             response="$default"
-            echo "[DEBUG] ask_yes_no() - Respuesta vacía, usando default: '$response'"
         fi
         
         case "$response" in
             [yY]|[yY][eE][sS]|[sS]|[sS][iI])
-                echo "[DEBUG] ask_yes_no() - Respuesta es 'sí', retornando 0"
                 return 0
                 ;;
             [nN]|[nN][oO])
-                echo "[DEBUG] ask_yes_no() - Respuesta es 'no', checkeando exit_on_no"
                 if [[ "$exit_on_no" == "true" ]]; then
                     printf "\n%b\n" "$(c bold)$(c warning)Operación cancelada$(cr)"
                     exit 0
                 else
-                    echo "[DEBUG] ask_yes_no() - Retornando 1 (no exit)"
                     return 1
                 fi
                 ;;
             *)
                 printf "\n%b\n\n" "$(c bold)$(c error)Error:$(cr) Solo escribe '$(c bold)$(c warning)s$(cr)', '$(c bold)$(c warning)n$(cr)', '$(c bold)$(c warning)y$(cr)' o '$(c bold)$(c warning)N$(cr)'"
-                echo "[DEBUG] ask_yes_no() - Respuesta inválida, continuando loop"
                 ;;
         esac
     done
