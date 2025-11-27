@@ -2205,6 +2205,59 @@ upload_gpg_key_to_github() {
         return 1
     fi
 
+    # Verificar y solicitar permisos OAuth necesarios para GPG
+    local scope_check_output
+    scope_check_output=$(gh gpg-key list 2>&1 || true)
+    
+    if echo "$scope_check_output" | grep -qi "insufficient OAuth scopes\|write:gpg_key"; then
+        show_separator
+        warning "GitHub CLI necesita permisos adicionales para gestionar llaves GPG"
+        show_separator
+        echo ""
+        info "Se requiere el scope $(c primary)write:gpg_key$(cr) para subir llaves GPG a GitHub."
+        echo ""
+        
+        if [[ "$INTERACTIVE_MODE" == "true" ]]; then
+            if ask_yes_no "¿Deseas actualizar los permisos de GitHub CLI ahora?" "y"; then
+                echo ""
+                info "Actualizando permisos de GitHub CLI..."
+                echo "$(c muted)Nota: Es posible que se abra tu navegador para autorizar los permisos adicionales.$(cr)"
+                echo ""
+                
+                if gh auth refresh -s write:gpg_key; then
+                    echo ""
+                    success "✓ Permisos actualizados exitosamente"
+                    echo ""
+                else
+                    echo ""
+                    error "No se pudieron actualizar los permisos"
+                    echo ""
+                    info "Puedes actualizar los permisos manualmente ejecutando:"
+                    echo "  $(c primary)gh auth refresh -s write:gpg_key$(cr)"
+                    return 1
+                fi
+            else
+                echo ""
+                warning "Permisos no actualizados. No se podrá subir la llave GPG automáticamente."
+                echo ""
+                info "Para subir la llave GPG más tarde, ejecuta:"
+                echo "  $(c primary)gh auth refresh -s write:gpg_key$(cr)"
+                echo "  $(c primary)gh gpg-key add <archivo-llave-gpg>$(cr)"
+                return 1
+            fi
+        else
+            # Modo no-interactivo
+            echo ""
+            warning "GitHub CLI requiere permisos adicionales para gestionar llaves GPG."
+            echo ""
+            info "En modo no-interactivo, actualiza los permisos manualmente:"
+            echo "  $(c primary)gh auth refresh -s write:gpg_key$(cr)"
+            echo ""
+            info "Luego vuelve a ejecutar este script."
+            return 1
+        fi
+    fi
+
     # Verificar si la llave GPG ya existe en GitHub
     local existing_keys
     existing_keys=$(gh gpg-key list 2>/dev/null | grep -i "$GPG_KEY_ID" || true)
