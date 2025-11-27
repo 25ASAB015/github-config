@@ -4,50 +4,34 @@
 TBD - created by archiving change add-accessible-color-system. Update Purpose after archive.
 ## Requirements
 ### Requirement: Semantic Color Palette Definition
-The system SHALL replace global color constants (CRE, CYE, CGR, CBL, CMA, CCY, CWH, BLD, DIM, CNC) with a centralized `COLORS` associative array that maps semantic tokens to ANSI escape sequences derived from `tput`, ensuring consistent and accessible styling across the script per WCAG 2.1 guidelines.
 
-#### Scenario: Palette includes state tokens
-- **WHEN** the script initializes UI helpers at startup
-- **THEN** the `COLORS` array defines tokens for states: `success` (green/setaf 2), `error` (red/setaf 1), `warning` (yellow/setaf 3), `info` (blue/setaf 4)
-- **AND** each token references a high-contrast foreground color validated against WCAG 2.1 contrast ratios for terminal backgrounds
+The system SHALL define a semantic color palette using an associative array, **now located in a dedicated module file**.
 
-#### Scenario: Palette includes UI element tokens
-- **WHEN** UI components request styling
-- **THEN** tokens exist for `primary` (cyan/setaf 6), `secondary` (magenta/setaf 5), `accent` (yellow/setaf 3), `text` (white/setaf 7), `muted` (dim), `bold` (bold), and `reset` (sgr0)
-- **AND** each token resolves to a consistent ANSI sequence shared by all consumers
+#### Scenario: Module location
+- **GIVEN** the refactored codebase
+- **WHEN** accessing color functionality
+- **THEN** the `COLORS` associative array SHALL be defined in `scripts/core/colors.sh`
+- **AND** the file SHALL follow dotbare-style documentation headers
 
-#### Scenario: Graceful fallback when colors unavailable
-- **WHEN** `tput` is missing, the terminal does not support colors (`TERM=dumb`), or `tput colors` returns 0
-- **THEN** palette initialization assigns empty strings for all tokens without raising errors or warnings
-- **AND** UI output remains readable in monochrome terminals (no broken escape sequences)
+#### Scenario: Module sourcing
+- **GIVEN** any module that uses colors
+- **WHEN** the main entry point initializes
+- **THEN** `scripts/core/colors.sh` SHALL be sourced before any color-using modules
+- **AND** `${mydir}` SHALL be used for the source path
 
-#### Scenario: Legacy constants removed
-- **WHEN** the script executes after migration
-- **THEN** global constants CRE, CYE, CGR, CBL, CMA, CCY, CWH, BLD, DIM, CNC are no longer defined or referenced
-- **AND** grep search for these constants in active code returns zero matches
+---
 
 ### Requirement: Color Access Helper Functions
-The system SHALL expose helper functions `c()` and `cr()` that retrieve palette entries, validate token names, enforce reset usage, and guard against invalid tokens without causing script failures.
 
-#### Scenario: Retrieve token code by name
-- **WHEN** a UI function calls `c success` (or any defined token name)
-- **THEN** the helper returns the ANSI sequence from `${COLORS[success]}` (e.g., `\033[32m` or equivalent tput output)
-- **AND** the caller can inline it within `printf` statements: `printf "$(c success)✓ Done$(cr)\n"`
+The system SHALL provide helper functions for safe color access, **now located in a dedicated module file**.
 
-#### Scenario: Handle unknown tokens safely
-- **WHEN** the helper receives an undefined token name (e.g., `c invalid_token`)
-- **THEN** it logs a debug warning to stderr when `DEBUG=true`: "Warning: unknown color token 'invalid_token'"
-- **AND** returns an empty string to prevent broken output or script crashes
+#### Scenario: Helper function location
+- **GIVEN** the refactored codebase
+- **WHEN** calling `c()` or `cr()` functions
+- **THEN** they SHALL be defined in `scripts/core/colors.sh`
+- **AND** both functions SHALL be documented with dotbare-style function headers
 
-#### Scenario: Reset helper restores defaults
-- **WHEN** a UI function calls the reset helper `cr` (or `c reset`)
-- **THEN** the helper outputs `${COLORS[reset]}` (tput sgr0), ensuring subsequent text uses default terminal colors
-- **AND** the helper prevents nested reset calls from breaking output
-
-#### Scenario: Helpers work without colors
-- **WHEN** the terminal does not support colors (COLORS array contains empty strings)
-- **THEN** `c()` and `cr()` return empty strings gracefully
-- **AND** no stderr warnings are emitted (silent degradation)
+---
 
 ### Requirement: Consistent Palette Usage in UI Components
 All UI-rendering components SHALL consume the semantic palette tokens via `c()` and `cr()` helpers instead of hard-coded escape sequences or legacy constants, guaranteeing uniform theming across progress indicators, previews, banners, and logging.

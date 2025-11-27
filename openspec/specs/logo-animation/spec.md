@@ -4,19 +4,22 @@
 TBD - created by archiving change add-animated-logo. Update Purpose after archive.
 ## Requirements
 ### Requirement: Animated Logo Display
-The system SHALL display the ASCII art logo with a typewriter animation effect, showing each line sequentially with a delay between lines.
 
-#### Scenario: Logo animation sequence
-- **WHEN** the `logo()` function is called with a text parameter
-- **THEN** the 16 logo lines are displayed one at a time, with each line appearing after a 0.05 second delay from the previous line
+The system SHALL display an animated ASCII art logo, **now located in the UI module**.
 
-#### Scenario: Logo line formatting
-- **WHEN** each logo line is displayed
-- **THEN** the line is printed with accent color (yellow/`CYE`) using `printf` with color codes, followed by a newline
+#### Scenario: Logo function location
+- **GIVEN** the refactored codebase
+- **WHEN** displaying the logo
+- **THEN** `logo()` SHALL be defined in `scripts/core/ui.sh`
+- **AND** the function SHALL be documented with dotbare-style headers
 
-#### Scenario: Logo animation completion
-- **WHEN** all 16 logo lines have been displayed
-- **THEN** the text banner appears below the logo with the format `[ ${text} ]` using bold, red brackets, and yellow text
+#### Scenario: Logo usage
+- **GIVEN** the refactored codebase
+- **WHEN** the welcome function calls logo
+- **THEN** `welcome()` SHALL also be in `scripts/core/ui.sh`
+- **AND** both functions SHALL share the same module
+
+---
 
 ### Requirement: Cursor Management During Animation
 The system SHALL hide the terminal cursor at the start of logo animation and restore it after completion.

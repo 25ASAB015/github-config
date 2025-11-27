@@ -4,61 +4,26 @@
 TBD - created by archiving change add-change-preview. Update Purpose after archive.
 ## Requirements
 ### Requirement: Change Preview Display
-The system SHALL display a formatted summary of all changes that will be made before applying them, showing file operations and configuration values. This preview is **distinct from** the generic `welcome()` function: it shows **specific values** (email, name) and **actual file states** (create vs. modify) after user information has been collected.
 
-#### Scenario: Preview shown after user info collection
-- **WHEN** the script completes `collect_user_info()` successfully (after line 2338 in main())
-- **THEN** `show_changes_summary()` is called to display the preview
-- **AND** the preview is shown before any file modifications or key generation occurs
-- **AND** the preview uses the actual collected values (`$USER_EMAIL`, `$USER_NAME`) rather than generic descriptions
+The system SHALL display a summary of all changes before applying them, **now located in a dedicated finalization module**.
 
-#### Scenario: Preview shows SSH key file status
-- **WHEN** the preview is displayed
-- **THEN** it shows `[CREAR]` for `~/.ssh/id_ed25519` and `~/.ssh/id_ed25519.pub` if they don't exist
-- **OR** it shows `[SOBRESCRIBIR]` if the files already exist
-
-#### Scenario: Preview shows Git config file status
-- **WHEN** the preview is displayed
-- **THEN** it shows `[CREAR]` for `~/.gitconfig` if it doesn't exist
-- **OR** it shows `[MODIFICAR]` with backup note if `~/.gitconfig` exists
-
-#### Scenario: Preview shows GPG key generation status
-- **WHEN** GPG key generation is planned (`GENERATE_GPG` is true)
-- **THEN** the preview displays `[CREAR] Llave GPG (4096-bit RSA)`
-- **WHEN** GPG key generation is not planned
-- **THEN** the preview does not show GPG key creation
-
-#### Scenario: Preview shows shell config modifications
-- **WHEN** the preview is displayed
-- **THEN** it shows `[MODIFICAR] ~/.bashrc` with note about SSH agent configuration
-- **AND** it shows `[MODIFICAR] ~/.zshrc` if `~/.zshrc` exists
-
-#### Scenario: Preview shows Git configuration values
-- **WHEN** the preview is displayed
-- **THEN** it shows the Git configuration section with:
-  - User name (`$USER_NAME`)
-  - User email (`$USER_EMAIL`)
-  - Default branch (main)
-  - GPG signing status (`$GENERATE_GPG`)
-  - Credential helper (manager/secretservice)
+#### Scenario: Function location
+- **GIVEN** the refactored codebase
+- **WHEN** showing the change preview
+- **THEN** `show_changes_summary()` SHALL be defined in `scripts/finalize.sh`
+- **AND** the function SHALL be documented with dotbare-style headers
 
 ### Requirement: User Confirmation Before Changes
-The system SHALL require user confirmation after displaying the preview before proceeding with any changes.
 
-#### Scenario: Confirmation prompt after preview
-- **WHEN** the preview is displayed
-- **THEN** the system prompts: "¿Confirmas que deseas aplicar estos cambios?" with default "y"
-- **AND** waits for user response using `ask_yes_no()`
+The system SHALL prompt for user confirmation after displaying the preview, **using the UI module**.
 
-#### Scenario: User confirms changes
-- **WHEN** the user answers "yes" to the confirmation prompt
-- **THEN** the script proceeds with key generation and file modifications
-- **AND** execution continues normally
+#### Scenario: Confirmation function usage
+- **GIVEN** the refactored codebase
+- **WHEN** prompting for confirmation
+- **THEN** `ask_yes_no()` from `scripts/core/ui.sh` SHALL be used
+- **AND** the finalize module SHALL source the UI module
 
-#### Scenario: User cancels changes
-- **WHEN** the user answers "no" to the confirmation prompt
-- **THEN** a warning message is displayed: "Operación cancelada por el usuario"
-- **AND** the script exits with code 0 (clean exit)
+---
 
 ### Requirement: Non-Interactive Mode Support
 The system SHALL handle preview display appropriately in non-interactive mode, either skipping it or auto-confirming.
