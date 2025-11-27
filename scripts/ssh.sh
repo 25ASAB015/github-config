@@ -184,7 +184,7 @@ EOF
                 
                 # Check if already exists
                 if grep -q "GitHub SSH Agent Configuration" "$config_file" 2>/dev/null; then
-                    warning "La configuración ya existe en ~/.${config_name}, omitiendo..."
+                    info "✓ La configuración de ssh-agent ya está presente en ~/.${config_name} (no se requiere acción)"
                 else
                     echo "" >> "$config_file"
                     cat "$bashrc_addition" >> "$config_file"

@@ -103,73 +103,46 @@ main() {
     parse_arguments "$@"
     
     # Perform initial checks
-    echo "[DEBUG] main() - Antes de initial_checks"
     initial_checks
-    echo "[DEBUG] main() - Después de initial_checks"
-    
-    echo "[DEBUG] main() - Antes de welcome()"
     welcome
-    echo "[DEBUG] main() - Después de welcome()"
     
     # Early GitHub CLI check if --auto-upload is active
-    echo "[DEBUG] main() - Antes de check GitHub CLI"
     if [[ "$AUTO_UPLOAD_KEYS" == "true" ]]; then
-        echo "[DEBUG] main() - AUTO_UPLOAD_KEYS es true, verificando GitHub CLI"
         if ! ensure_github_cli_ready "early"; then
-            echo "[DEBUG] main() - GitHub CLI no está listo, saliendo"
             exit 1
         fi
-        echo "[DEBUG] main() - GitHub CLI está listo"
-    else
-        echo "[DEBUG] main() - AUTO_UPLOAD_KEYS es false, saltando check GitHub CLI"
     fi
     
     # Create log file
-    echo "[DEBUG] main() - Antes de crear archivo de log"
     mkdir -p "$(dirname "$LOG_FILE")"
     log "=== INICIO DE CONFIGURACIÓN DE GIT ==="
-    echo "[DEBUG] main() - Después de crear archivo de log"
     
     # Initialize progress variables
-    echo "[DEBUG] main() - Inicializando variables de progreso"
     TOTAL_STEPS=9
     CURRENT_STEP=0
-    echo "[DEBUG] main() - TOTAL_STEPS=$TOTAL_STEPS, CURRENT_STEP=$CURRENT_STEP"
     
     # Step 1: Check dependencies
-    echo "[DEBUG] main() - Antes de Step 1: Check dependencies"
-    echo "[DEBUG] main() - CURRENT_STEP antes de incrementar: $CURRENT_STEP"
-    set +e  # Temporarily disable exit on error for arithmetic
-    ((CURRENT_STEP++))
-    local step_increment_result=$?
-    set -e  # Re-enable exit on error
-    echo "[DEBUG] main() - Resultado de incremento: $step_increment_result"
-    echo "[DEBUG] main() - CURRENT_STEP después de incrementar: $CURRENT_STEP"
-    echo "[DEBUG] main() - Antes de show_progress_bar con CURRENT_STEP=$CURRENT_STEP, TOTAL_STEPS=$TOTAL_STEPS"
-    echo "[DEBUG] main() - WORKFLOW_STEPS[$CURRENT_STEP]='${WORKFLOW_STEPS[$CURRENT_STEP]}'"
+    # Use arithmetic expansion that always succeeds
+    CURRENT_STEP=$((CURRENT_STEP + 1))
     show_progress_bar $CURRENT_STEP $TOTAL_STEPS "${WORKFLOW_STEPS[$CURRENT_STEP]}"
-    echo "[DEBUG] main() - Después de show_progress_bar"
-    echo "[DEBUG] main() - Antes de llamar check_dependencies()"
     if ! check_dependencies; then
-        echo "[DEBUG] main() - check_dependencies falló, saliendo"
         exit 1
     fi
-    echo "[DEBUG] main() - check_dependencies completado exitosamente"
     
     # Step 2: Setup directories
-    ((CURRENT_STEP++))
+    CURRENT_STEP=$((CURRENT_STEP + 1))
     show_progress_bar $CURRENT_STEP $TOTAL_STEPS "${WORKFLOW_STEPS[$CURRENT_STEP]}"
     if ! setup_directories; then
         exit 1
     fi
     
     # Step 3: Backup existing keys
-    ((CURRENT_STEP++))
+    CURRENT_STEP=$((CURRENT_STEP + 1))
     show_progress_bar $CURRENT_STEP $TOTAL_STEPS "${WORKFLOW_STEPS[$CURRENT_STEP]}"
     backup_existing_keys
     
     # Step 4: Collect user information
-    ((CURRENT_STEP++))
+    CURRENT_STEP=$((CURRENT_STEP + 1))
     show_progress_bar $CURRENT_STEP $TOTAL_STEPS "${WORKFLOW_STEPS[$CURRENT_STEP]}"
     if ! collect_user_info; then
         exit 1
@@ -205,7 +178,7 @@ main() {
     fi
     
     # Step 5: Generate SSH key
-    ((CURRENT_STEP++))
+    CURRENT_STEP=$((CURRENT_STEP + 1))
     show_progress_bar $CURRENT_STEP $TOTAL_STEPS "${WORKFLOW_STEPS[$CURRENT_STEP]}"
     if ! generate_ssh_key; then
         exit 1
@@ -213,7 +186,7 @@ main() {
     
     # Step 6: Generate or use GPG key
     if [[ "$GENERATE_GPG" == "true" ]]; then
-        ((CURRENT_STEP++))
+        CURRENT_STEP=$((CURRENT_STEP + 1))
         show_progress_bar $CURRENT_STEP $TOTAL_STEPS "${WORKFLOW_STEPS[$CURRENT_STEP]}"
         
         if [[ -n "$GPG_KEY_ID" ]]; then
@@ -225,14 +198,14 @@ main() {
     fi
     
     # Step 7: Configure Git
-    ((CURRENT_STEP++))
+    CURRENT_STEP=$((CURRENT_STEP + 1))
     show_progress_bar $CURRENT_STEP $TOTAL_STEPS "${WORKFLOW_STEPS[$CURRENT_STEP]}"
     if ! configure_git; then
         exit 1
     fi
     
     # Step 8: Create ssh-agent configuration
-    ((CURRENT_STEP++))
+    CURRENT_STEP=$((CURRENT_STEP + 1))
     show_progress_bar $CURRENT_STEP $TOTAL_STEPS "${WORKFLOW_STEPS[$CURRENT_STEP]}"
     create_ssh_agent_script
     
@@ -246,18 +219,12 @@ main() {
     fi
     
     # Test connectivity
-    echo "[DEBUG] main() - Antes de test_github_connection()"
     test_github_connection
-    echo "[DEBUG] main() - Después de test_github_connection()"
     
     # Step 9: Show final instructions
-    echo "[DEBUG] main() - Antes de Step 9: Show final instructions"
-    ((CURRENT_STEP++))
-    echo "[DEBUG] main() - CURRENT_STEP incrementado a $CURRENT_STEP"
+    CURRENT_STEP=$((CURRENT_STEP + 1))
     show_progress_bar $CURRENT_STEP $TOTAL_STEPS "${WORKFLOW_STEPS[$CURRENT_STEP]}"
-    echo "[DEBUG] main() - Antes de show_final_instructions()"
     show_final_instructions
-    echo "[DEBUG] main() - Después de show_final_instructions()"
     
     log "=== FIN DE SESIÓN EXITOSA ==="
     
