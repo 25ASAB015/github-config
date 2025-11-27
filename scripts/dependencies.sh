@@ -33,16 +33,24 @@ declare -r _DEPENDENCIES_SOURCED=1
 #       exit 1
 #   fi
 check_dependencies() {
+    echo "[DEBUG] check_dependencies() - INICIO"
     local missing_deps=()
     local required_deps=("git" "ssh" "ssh-keygen")
     
+    echo "[DEBUG] check_dependencies() - required_deps=${required_deps[*]}"
     info "Verificando dependencias requeridas..."
+    echo "[DEBUG] check_dependencies() - Después de info message"
     
     for dep in "${required_deps[@]}"; do
+        echo "[DEBUG] check_dependencies() - Verificando: $dep"
         if ! command -v "$dep" &> /dev/null; then
+            echo "[DEBUG] check_dependencies() - $dep NO encontrado"
             missing_deps+=("$dep")
+        else
+            echo "[DEBUG] check_dependencies() - $dep encontrado"
         fi
     done
+    echo "[DEBUG] check_dependencies() - missing_deps=${missing_deps[*]}"
     
     if [[ ${#missing_deps[@]} -gt 0 ]]; then
         error "Faltan las siguientes dependencias: ${missing_deps[*]}"

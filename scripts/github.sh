@@ -474,25 +474,39 @@ maybe_upload_keys() {
 # @example
 #   test_github_connection
 test_github_connection() {
+    echo "[DEBUG] test_github_connection() - INICIO"
     show_separator
     printf "%b\n" "$(c bold)$(c text)🧪 PRUEBA DE CONECTIVIDAD$(cr)"
     show_separator
     
+    echo "[DEBUG] test_github_connection() - Antes de ask_yes_no"
     if ask_yes_no "¿Deseas probar la conexión SSH con GitHub ahora?"; then
+        echo "[DEBUG] test_github_connection() - Usuario dijo sí, probando conexión"
         info "Probando conexión SSH con GitHub..."
         
+        echo "[DEBUG] test_github_connection() - Antes de ejecutar ssh -T git@github.com"
+        # Temporarily disable exit on error since ssh returns 1 even on success
+        set +e
         local ssh_output
         local ssh_exit_code
         ssh_output=$(ssh -T git@github.com 2>&1)
         ssh_exit_code=$?
+        set -e
+        echo "[DEBUG] test_github_connection() - Después de ejecutar ssh, exit_code=$ssh_exit_code"
+        echo "[DEBUG] test_github_connection() - ssh_output (primeros 200 chars): ${ssh_output:0:200}"
         
         if [[ $ssh_exit_code -eq 1 ]] && [[ $ssh_output == *"successfully authenticated"* ]]; then
+            echo "[DEBUG] test_github_connection() - Conexión exitosa"
             success "¡Conexión SSH con GitHub exitosa!"
             printf "%b\n" "$(c success)$ssh_output$(cr)"
         else
+            echo "[DEBUG] test_github_connection() - Conexión falló o pendiente"
             warning "La conexión SSH falló o está pendiente de configuración"
             printf "%b\n" "$(c warning)Salida: $ssh_output$(cr)"
             printf "%b\n" "$(c primary)Asegúrate de haber agregado la llave SSH a tu cuenta de GitHub$(cr)"
         fi
+    else
+        echo "[DEBUG] test_github_connection() - Usuario dijo no, saltando prueba"
     fi
+    echo "[DEBUG] test_github_connection() - FIN"
 }

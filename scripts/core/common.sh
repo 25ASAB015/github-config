@@ -146,11 +146,12 @@ initial_checks() {
         return 1
     fi
     
-    # Check if terminal is interactive (if needed)
-    if [[ "$INTERACTIVE_MODE" == "true" ]] && [[ ! -t 0 ]]; then
-        warning "No se detectó terminal interactivo, cambiando a modo no-interactivo"
-        INTERACTIVE_MODE=false
-    fi
+    # Note: We no longer auto-detect terminal interactivity
+    # Interactive mode is controlled explicitly via:
+    # 1. --non-interactive flag (sets INTERACTIVE_MODE=false)
+    # 2. INTERACTIVE_MODE environment variable
+    # 3. Default is true (interactive)
+    # This prevents false positives when running in terminals
     
     return 0
 }
