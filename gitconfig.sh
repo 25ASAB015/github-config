@@ -214,7 +214,7 @@ main() {
     maybe_upload_keys
     
     # Save keys to files if requested
-    if ask_yes_no "¿Deseas guardar las llaves en archivos para referencia futura?"; then
+    if ask_yes_no "¿Deseas exportar las llaves públicas a archivos para agregarlas a GitHub?"; then
         save_keys_to_files
     fi
     

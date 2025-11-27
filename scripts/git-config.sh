@@ -89,13 +89,52 @@ collect_user_info() {
         done
     fi
     
+    # Get default branch preference
+    if [[ "$INTERACTIVE_MODE" == "true" ]]; then
+        echo ""
+        info "Selecciona la rama por defecto para nuevos repositorios:"
+        echo "  1. $(c primary)master$(cr) - Rama tradicional"
+        echo "  2. $(c primary)main$(cr) - Rama moderna (recomendada)"
+        echo ""
+        
+        local branch_choice
+        while true; do
+            printf "  $(c accent)Selecciona [1/2]$(cr) (default: 2): "
+            read -r branch_choice
+            
+            # Use default if empty
+            if [[ -z "$branch_choice" ]]; then
+                branch_choice="2"
+            fi
+            
+            case "$branch_choice" in
+                1)
+                    GIT_DEFAULT_BRANCH="master"
+                    break
+                    ;;
+                2)
+                    GIT_DEFAULT_BRANCH="main"
+                    break
+                    ;;
+                *)
+                    error "Opción inválida. Por favor selecciona 1 o 2."
+                    ;;
+            esac
+        done
+    else
+        # Non-interactive mode: use environment variable or default to main
+        GIT_DEFAULT_BRANCH="${GIT_DEFAULT_BRANCH:-main}"
+        log "Using default branch: $GIT_DEFAULT_BRANCH (non-interactive mode)"
+    fi
+    
     echo ""
     success "Información recopilada:"
     echo "  Nombre: $(c primary)$USER_NAME$(cr)"
     echo "  Email:  $(c primary)$USER_EMAIL$(cr)"
+    echo "  Rama default: $(c primary)$GIT_DEFAULT_BRANCH$(cr)"
     echo ""
     
-    log "User info collected: $USER_NAME <$USER_EMAIL>"
+    log "User info collected: $USER_NAME <$USER_EMAIL>, default branch: $GIT_DEFAULT_BRANCH"
     return 0
 }
 
@@ -178,7 +217,7 @@ show_changes_summary() {
     
     printf "  $(c primary)Nombre:$(cr)        $USER_NAME\n"
     printf "  $(c primary)Email:$(cr)         $USER_EMAIL\n"
-    printf "  $(c primary)Rama default:$(cr)  master\n"
+    printf "  $(c primary)Rama default:$(cr)  ${GIT_DEFAULT_BRANCH:-main}\n"
     if [[ "${GENERATE_GPG:-false}" == "true" ]]; then
         if [[ -n "$GPG_KEY_ID" ]]; then
             printf "  $(c primary)GPG signing:$(cr)   $(c success)true$(cr) $(c muted)(usando llave existente: ${GPG_KEY_ID})$(cr)\n"
@@ -313,7 +352,7 @@ generate_gitconfig() {
 	credentialStore = secretservice"; fi)
 
 [init]
-	defaultBranch = master
+	defaultBranch = ${GIT_DEFAULT_BRANCH:-main}
 
 [core]
 	editor = nano

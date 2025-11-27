@@ -217,21 +217,24 @@ backup_existing_keys() {
         done
         echo ""
         
-        if ask_yes_no "¿Deseas hacer un backup de las llaves existentes antes de continuar?" "y"; then
+        if ask_yes_no "¿Deseas hacer un backup de seguridad de las llaves existentes antes de continuar?" "y"; then
+            info "Creando backup de seguridad de llaves existentes..."
             mkdir -p "$backup_dir"
             
             for file in "${existing_keys[@]}"; do
                 if cp "$file" "$backup_dir/" 2>/dev/null; then
-                    success "Backup creado: $(basename "$file")"
+                    success "✓ Backup de seguridad creado: $(basename "$file")"
                     log "Backed up: $file"
                 else
                     error "No se pudo hacer backup de: $(basename "$file")"
                 fi
             done
             
-            success "Backup completado en: $(c primary)$backup_dir$(cr)"
+            echo ""
+            success "✓ Backup de seguridad completado en: $(c primary)$backup_dir$(cr)"
+            info "$(c muted)(Este backup contiene tus llaves anteriores antes de ser sobrescritas)$(cr)"
         else
-            info "Continuando sin hacer backup"
+            info "Continuando sin hacer backup de seguridad"
         fi
     fi
     

@@ -124,22 +124,25 @@ display_keys() {
 #   save_keys_to_files
 save_keys_to_files() {
     show_separator
-    printf "%b\n" "$(c bold)$(c text)💾 GUARDANDO LLAVES EN ARCHIVOS$(cr)"
+    printf "%b\n" "$(c bold)$(c text)💾 EXPORTANDO LLAVES PÚBLICAS PARA GITHUB$(cr)"
     show_separator
+    echo ""
+    info "Guardando llaves públicas para que puedas agregarlas a tu cuenta de GitHub..."
+    echo ""
     
-    local output_dir="$SCRIPT_DIR/keys-$(date +%Y%m%d_%H%M%S)"
+    local output_dir="$HOME/.github-keys-setup/keys-$(date +%Y%m%d_%H%M%S)"
     mkdir -p "$output_dir"
     
     # Save SSH key
     if [[ -f "$HOME/.ssh/id_ed25519.pub" ]]; then
         cp "$HOME/.ssh/id_ed25519.pub" "$output_dir/ssh_public_key.txt"
-        success "Llave SSH guardada en: $output_dir/ssh_public_key.txt"
+        success "✓ Llave SSH pública guardada en: $output_dir/ssh_public_key.txt"
     fi
     
     # Save GPG key
     if [[ -n "$GPG_KEY_ID" ]]; then
         gpg --armor --export "$GPG_KEY_ID" > "$output_dir/gpg_public_key.txt"
-        success "Llave GPG guardada en: $output_dir/gpg_public_key.txt"
+        success "✓ Llave GPG pública guardada en: $output_dir/gpg_public_key.txt"
     fi
     
     # Create info file
@@ -160,8 +163,10 @@ INSTRUCCIONES:
 NOTA: Mantén estos archivos seguros y no los compartas públicamente.
 EOF
     
-    success "Información guardada en: $output_dir/key_info.txt"
-    info "Directorio de salida: $output_dir"
+    success "✓ Información guardada en: $output_dir/key_info.txt"
+    echo ""
+    info "Directorio de exportación: $(c primary)$output_dir$(cr)"
+    info "$(c muted)(Estas son las llaves públicas que debes agregar a GitHub)$(cr)"
 }
 
 #==============================================================================
