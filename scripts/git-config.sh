@@ -296,7 +296,7 @@ cleanup_credential_duplicates() {
     }
     in_credential && /^[[:space:]]*helper[[:space:]]*=/ {
         if (helper_found == 0) {
-            # Keep the first helper entry (even if empty, we'll clean it later)
+            # Keep the first helper entry even if empty, we will clean it later
             helper_value = $0
             gsub(/^[[:space:]]*helper[[:space:]]*=[[:space:]]*/, "", helper_value)
             gsub(/[[:space:]]*$/, "", helper_value)
@@ -304,9 +304,9 @@ cleanup_credential_duplicates() {
                 print $0
                 helper_found = 1
             }
-            # If empty, skip it (don't print)
+            # If empty, skip it - do not print
         }
-        # Skip all subsequent helper entries (duplicates)
+        # Skip all subsequent helper entries - these are duplicates
         next
     }
     {

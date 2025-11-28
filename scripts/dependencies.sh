@@ -66,19 +66,36 @@ check_dependencies() {
     
     success "Todas las dependencias requeridas están instaladas"
     
-    # Check optional dependencies
-    check_optional_dependencies
+    # Show required dependencies list
+    info "Dependencias requeridas:"
+    for dep in "${required_deps[@]}"; do
+        if command -v "$dep" &> /dev/null; then
+            printf "  $(c bold)$(c success)✓$(cr) $(c bold)%s$(cr)\n" "$dep"
+        else
+            printf "  $(c error)✗$(cr) $(c bold)%s$(cr) $(c error)(no encontrado)$(cr)\n" "$dep"
+        fi
+    done
+    
+    # Check optional dependencies (without header since it's part of required check)
+    check_optional_dependencies "true"
     
     echo ""
     return 0
 }
 
 # @description Check optional dependencies and inform user
+# @param $1 no_header - If "true", don't show header (default: false, shows header)
 # @return 0 always
 # @example
-#   check_optional_dependencies
+#   check_optional_dependencies          # Shows header
+#   check_optional_dependencies "true"    # No header
 check_optional_dependencies() {
+    local no_header="${1:-false}"
     local optional_deps=("gpg" "gh" "git-credential-manager")
+    
+    if [[ "$no_header" != "true" ]]; then
+        info "Dependencias opcionales:"
+    fi
     
     for dep in "${optional_deps[@]}"; do
         if command -v "$dep" &> /dev/null; then
