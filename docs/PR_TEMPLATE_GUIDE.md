@@ -18,24 +18,85 @@ La plantilla ayuda a:
 
 ## 📋 Cómo Usar
 
-### Opción 1: GitHub Web Interface
+### Opción 1: GitHub Web Interface (Recomendado)
 
-1. Cuando crees un nuevo PR en GitHub, la plantilla se cargará automáticamente
-2. Completa cada sección según corresponda
-3. Elimina las secciones que no apliquen a tu cambio
+1. **Crear el PR en GitHub:**
+   - Ve a tu repositorio en GitHub
+   - Haz clic en "Pull requests" → "New pull request"
+   - Selecciona tu rama como "compare" y `master` como "base"
+
+2. **La plantilla se carga automáticamente:**
+   - GitHub detecta `.github/pull_request_template.md` automáticamente
+   - El contenido de la plantilla aparecerá en el campo de descripción
+
+3. **Completa la plantilla:**
+   - Reemplaza los placeholders `[texto entre corchetes]` con información real
+   - Completa cada sección según corresponda a tu cambio
+   - Elimina las secciones que no apliquen (ej: "Archivos Eliminados" si no hay)
+
+4. **Revisa y crea el PR:**
+   - Verifica que toda la información sea precisa
+   - Marca los items del checklist que apliquen
+   - Haz clic en "Create pull request"
 
 ### Opción 2: GitHub CLI
 
 ```bash
-# Crear PR usando la plantilla
-gh pr create --title "Título del PR" --body-file .github/pull_request_template.md --base master --head tu-rama
+# 1. Asegúrate de estar en tu rama de feature
+git checkout tu-rama-de-feature
+
+# 2. Crea el PR usando la plantilla directamente
+gh pr create \
+  --title "🧪 [Título Descriptivo del Cambio]" \
+  --body-file .github/pull_request_template.md \
+  --base master \
+  --head tu-rama-de-feature
+
+# 3. Edita el PR después si necesitas ajustar la descripción
+gh pr edit <número-del-pr> --body-file .github/pull_request_template.md
 ```
 
-### Opción 3: Manual
+**Ejemplo práctico:**
+```bash
+# Crear PR para una nueva feature
+gh pr create \
+  --title "✨ Add new feature X" \
+  --body-file .github/pull_request_template.md \
+  --base master \
+  --head add-feature-x
+```
 
-1. Copia el contenido de `.github/pull_request_template.md`
-2. Edita según tu cambio específico
-3. Pega en el campo de descripción del PR
+### Opción 3: Manual (Editar antes de crear)
+
+1. **Copia la plantilla:**
+   ```bash
+   cat .github/pull_request_template.md
+   ```
+
+2. **Edita el contenido:**
+   - Abre tu editor de texto favorito
+   - Reemplaza todos los placeholders con información real
+   - Elimina secciones que no apliquen
+
+3. **Guarda en un archivo temporal:**
+   ```bash
+   # Edita y guarda como pr_description.md
+   nano pr_description.md
+   ```
+
+4. **Crea el PR con el archivo editado:**
+   ```bash
+   gh pr create --title "Título" --body-file pr_description.md --base master --head tu-rama
+   ```
+
+### Opción 4: Editar PR existente
+
+Si ya creaste el PR pero quieres usar la plantilla:
+
+```bash
+# Editar un PR existente con la plantilla
+gh pr edit <número-del-pr> --body-file .github/pull_request_template.md
+```
 
 ## 📝 Secciones de la Plantilla
 
@@ -92,4 +153,34 @@ Si necesitas actualizar la plantilla:
 1. Edita `.github/pull_request_template.md`
 2. Considera crear un PR para actualizar la plantilla
 3. Documenta cambios significativos en esta guía
+
+## 🧹 Mantenimiento: Limpiar Ramas Locales
+
+Después de mergear PRs, las ramas remotas se eliminan pero las locales pueden quedar. Para limpiar:
+
+```bash
+# 1. Actualizar referencias remotas
+git remote prune origin
+
+# 2. Ver ramas locales que ya no existen en remoto
+git branch -vv | grep "gone"
+
+# 3. Eliminar ramas locales obsoletas
+git branch -d nombre-de-la-rama
+
+# 4. Si la rama tiene cambios no mergeados (forzar eliminación)
+git branch -D nombre-de-la-rama
+
+# 5. Verificar que todo está limpio
+git branch -vv
+```
+
+**Ejemplo completo:**
+```bash
+# Limpiar todas las ramas locales que ya no existen en GitHub
+git remote prune origin
+git branch -vv | grep "gone" | awk '{print $1}' | xargs -r git branch -d
+```
+
+**Nota:** El comando `git pull` puede fallar con "Cannot fast-forward to multiple branches" si hay ramas locales obsoletas. Limpia las ramas primero y luego haz `git pull origin master`.
 
