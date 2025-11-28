@@ -267,3 +267,177 @@ show_final_instructions() {
     show_separator
     echo ""
 }
+
+#==============================================================================
+# POST-INSTALLATION VERIFICATION
+#==============================================================================
+
+# @description Run comprehensive verification suite to test all configured components
+# @return 0 if all critical tests pass, 1 if any critical test fails
+# @example
+#   run_verification_suite
+run_verification_suite() {
+    show_separator
+    printf "%b\n" "$(c bold)$(c accent)🧪 VERIFICACIÓN POST-INSTALACIÓN$(cr)"
+    show_separator
+    echo ""
+    
+    local tests_passed=0
+    local tests_failed=0
+    local tests_warnings=0
+    local tests_total=0
+    
+    # Calcular el ancho máximo necesario para alinear los símbolos
+    local max_width=0
+    local test_names=(
+        "Verificando configuración de Git..."
+        "Verificando llave SSH..."
+        "Verificando SSH agent..."
+    )
+    [[ -n "${GPG_KEY_ID:-}" ]] && test_names+=("Verificando llave GPG...")
+    test_names+=(
+        "Verificando GitHub CLI..."
+        "Verificando Git Credential Manager..."
+        "Verificando conectividad con GitHub..."
+    )
+    
+    for name in "${test_names[@]}"; do
+        local len=${#name}
+        [[ $len -gt $max_width ]] && max_width=$len
+    done
+    
+    # Agregar padding para el símbolo (2 espacios + símbolo)
+    local total_width=$((max_width + 4))
+    
+    # Test 1: Git config
+    tests_total=$((tests_total + 1))
+    local test_name="Verificando configuración de Git..."
+    local name_len=${#test_name}
+    local padding=$((total_width - name_len))
+    printf "  %s%*s" "$test_name" "$padding" ""
+    if git config --global user.name &>/dev/null && git config --global user.email &>/dev/null; then
+        printf "%b\n" "$(c success)✓$(cr)"
+        tests_passed=$((tests_passed + 1))
+    else
+        printf "%b\n" "$(c error)✗$(cr)"
+        tests_failed=$((tests_failed + 1))
+    fi
+    
+    # Test 2: SSH key
+    tests_total=$((tests_total + 1))
+    test_name="Verificando llave SSH..."
+    name_len=${#test_name}
+    padding=$((total_width - name_len))
+    printf "  %s%*s" "$test_name" "$padding" ""
+    if [[ -f "$HOME/.ssh/id_ed25519" ]] && [[ -f "$HOME/.ssh/id_ed25519.pub" ]]; then
+        printf "%b\n" "$(c success)✓$(cr)"
+        tests_passed=$((tests_passed + 1))
+    else
+        printf "%b\n" "$(c error)✗$(cr)"
+        tests_failed=$((tests_failed + 1))
+    fi
+    
+    # Test 3: SSH agent
+    tests_total=$((tests_total + 1))
+    test_name="Verificando SSH agent..."
+    name_len=${#test_name}
+    padding=$((total_width - name_len))
+    printf "  %s%*s" "$test_name" "$padding" ""
+    if ssh-add -l &>/dev/null; then
+        printf "%b\n" "$(c success)✓$(cr)"
+        tests_passed=$((tests_passed + 1))
+    else
+        printf "%b\n" "$(c warning)⚠$(cr)"
+        tests_warnings=$((tests_warnings + 1))
+    fi
+    
+    # Test 4: GPG key (conditional)
+    if [[ -n "${GPG_KEY_ID:-}" ]]; then
+        tests_total=$((tests_total + 1))
+        test_name="Verificando llave GPG..."
+        name_len=${#test_name}
+        padding=$((total_width - name_len))
+        printf "  %s%*s" "$test_name" "$padding" ""
+        if gpg --list-secret-keys "$GPG_KEY_ID" &>/dev/null; then
+            printf "%b\n" "$(c success)✓$(cr)"
+            tests_passed=$((tests_passed + 1))
+        else
+            printf "%b\n" "$(c error)✗$(cr)"
+            tests_failed=$((tests_failed + 1))
+        fi
+    fi
+    
+    # Test 5: GitHub CLI
+    tests_total=$((tests_total + 1))
+    test_name="Verificando GitHub CLI..."
+    name_len=${#test_name}
+    padding=$((total_width - name_len))
+    printf "  %s%*s" "$test_name" "$padding" ""
+    if command -v gh &>/dev/null && gh auth status &>/dev/null; then
+        printf "%b\n" "$(c success)✓$(cr)"
+        tests_passed=$((tests_passed + 1))
+    else
+        printf "%b\n" "$(c warning)⚠$(cr)"
+        tests_warnings=$((tests_warnings + 1))
+    fi
+    
+    # Test 6: Git Credential Manager
+    tests_total=$((tests_total + 1))
+    test_name="Verificando Git Credential Manager..."
+    name_len=${#test_name}
+    padding=$((total_width - name_len))
+    printf "  %s%*s" "$test_name" "$padding" ""
+    if command -v git-credential-manager &>/dev/null; then
+        printf "%b\n" "$(c success)✓$(cr)"
+        tests_passed=$((tests_passed + 1))
+    else
+        printf "%b\n" "$(c error)✗$(cr)"
+        tests_failed=$((tests_failed + 1))
+    fi
+    
+    # Test 7: Conectividad GitHub (usando la misma lógica que test_github_connection)
+    tests_total=$((tests_total + 1))
+    test_name="Verificando conectividad con GitHub..."
+    name_len=${#test_name}
+    padding=$((total_width - name_len))
+    printf "  %s%*s" "$test_name" "$padding" ""
+    set +e
+    local ssh_output
+    local ssh_exit_code
+    ssh_output=$(timeout 5 ssh -T git@github.com 2>&1)
+    ssh_exit_code=$?
+    set -e
+    
+    if [[ $ssh_exit_code -eq 1 ]] && [[ $ssh_output == *"successfully authenticated"* ]]; then
+        printf "%b\n" "$(c success)✓$(cr)"
+        tests_passed=$((tests_passed + 1))
+    else
+        printf "%b\n" "$(c warning)⚠$(cr)"
+        tests_warnings=$((tests_warnings + 1))
+    fi
+    
+    # Resumen
+    echo ""
+    show_separator
+    printf "%b\n" "$(c bold)$(c info)Resumen de verificación:$(cr)"
+    printf "  Tests ejecutados: %d\n" "$tests_total"
+    printf "  $(c success)✓ Pasados: %d$(cr)\n" "$tests_passed"
+    if [[ $tests_warnings -gt 0 ]]; then
+        printf "  $(c warning)⚠ Advertencias: %d$(cr)\n" "$tests_warnings"
+    fi
+    if [[ $tests_failed -gt 0 ]]; then
+        printf "  $(c error)✗ Fallidos: %d$(cr)\n" "$tests_failed"
+    fi
+    show_separator
+    echo ""
+    
+    if [[ $tests_failed -eq 0 ]]; then
+        success "¡Todas las verificaciones pasaron correctamente!"
+        log "Verification suite: All tests passed ($tests_passed/$tests_total)"
+        return 0
+    else
+        warning "Algunas verificaciones fallaron. Revisa la configuración."
+        log "Verification suite: Some tests failed ($tests_failed/$tests_total failed, $tests_passed/$tests_total passed)"
+        return 1
+    fi
+}

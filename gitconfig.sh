@@ -230,6 +230,9 @@ main() {
     show_progress_bar $CURRENT_STEP $TOTAL_STEPS "${WORKFLOW_STEPS[$CURRENT_STEP]}"
     show_final_instructions
     
+    # Run post-installation verification suite
+    run_verification_suite || true
+    
     log "=== FIN DE SESIÓN EXITOSA ==="
     
     echo ""

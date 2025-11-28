@@ -167,6 +167,7 @@ Final summary, instructions, and connectivity test:
 - `save_keys_to_files()` - Export keys to files for manual upload
 - `test_github_connection()` - Test SSH connectivity with GitHub
 - `show_final_instructions()` - Display final setup instructions
+- `run_verification_suite()` - Comprehensive post-installation verification of all configured components
 
 **Dependencies:** Core utilities
 
