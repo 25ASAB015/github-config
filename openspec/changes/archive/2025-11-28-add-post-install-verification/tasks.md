@@ -14,13 +14,13 @@
 - [x] 1.13 Integrate verification suite call into main workflow (after `show_final_instructions()`)
 
 ## 2. Testing
-- [ ] 2.1 Test verification suite with successful installation
-- [ ] 2.2 Test verification suite with missing SSH keys
-- [ ] 2.3 Test verification suite with missing GPG key (when GPG was not generated)
-- [ ] 2.4 Test verification suite with GitHub CLI not authenticated
-- [ ] 2.5 Test verification suite with no network connectivity (GitHub test)
-- [ ] 2.6 Verify color coding works correctly
-- [ ] 2.7 Verify return codes are correct (0 for success, 1 for failure)
+- [x] 2.1 Test verification suite with successful installation
+- [x] 2.2 Test verification suite with missing SSH keys
+- [x] 2.3 Test verification suite with missing GPG key (when GPG was not generated)
+- [x] 2.4 Test verification suite with GitHub CLI not authenticated
+- [x] 2.5 Test verification suite with no network connectivity (GitHub test)
+- [x] 2.6 Verify color coding works correctly
+- [x] 2.7 Verify return codes are correct (0 for success, 1 for failure)
 
 ## 3. Documentation
 - [x] 3.1 Add function documentation with dotbare-style headers
