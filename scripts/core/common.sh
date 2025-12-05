@@ -90,34 +90,58 @@ copy_to_clipboard() {
         return 1
     fi
     
-    case "$os_type" in
-        darwin)
-            if command -v pbcopy &> /dev/null; then
-                cat "$file_path" | pbcopy
-                success "Llave copiada al portapapeles"
-                return 0
-            fi
-            ;;
-        *)
-            # Linux - try various clipboard tools
-            if command -v xclip &> /dev/null; then
-                cat "$file_path" | xclip -selection clipboard
-                success "Llave copiada al portapapeles (xclip)"
-                return 0
-            elif command -v xsel &> /dev/null; then
-                cat "$file_path" | xsel --clipboard --input
-                success "Llave copiada al portapapeles (xsel)"
-                return 0
-            elif command -v wl-copy &> /dev/null; then
-                cat "$file_path" | wl-copy
-                success "Llave copiada al portapapeles (wl-copy)"
-                return 0
-            fi
-            ;;
-    esac
+    # Leer contenido una sola vez
+    local content
+    content=$(cat "$file_path")
     
-    warning "No se encontró herramienta de portapapeles"
-    info "Instala xclip, xsel o wl-copy para copiar automáticamente"
+    # Elegir herramienta priorizando entorno (Wayland > X11 > macOS)
+    local clipboard_cmd=""
+    local verify_cmd=""
+    local method_name=""
+    
+    if [[ -n "${WAYLAND_DISPLAY:-}" ]] && command -v wl-copy &> /dev/null; then
+        clipboard_cmd="wl-copy"
+        verify_cmd="wl-paste"
+        method_name="wl-copy (Wayland)"
+    elif [[ -n "${DISPLAY:-}" ]] && command -v xsel &> /dev/null; then
+        clipboard_cmd="xsel --clipboard --input"
+        verify_cmd="xsel --clipboard --output"
+        method_name="xsel (X11)"
+    elif [[ -n "${DISPLAY:-}" ]] && command -v xclip &> /dev/null; then
+        clipboard_cmd="xclip -selection clipboard"
+        verify_cmd="xclip -selection clipboard -o"
+        method_name="xclip (X11)"
+    elif [[ "$os_type" == "darwin" ]] && command -v pbcopy &> /dev/null; then
+        clipboard_cmd="pbcopy"
+        verify_cmd="pbpaste"
+        method_name="pbcopy (macOS)"
+    fi
+    
+    if [[ -z "$clipboard_cmd" ]]; then
+        warning "No se encontró herramienta de portapapeles ni sesión gráfica activa"
+        info "Instala: xclip/xsel (X11) o wl-clipboard (Wayland). En macOS, pbcopy ya viene instalado."
+        return 1
+    fi
+    
+    if echo -n "$content" | eval "$clipboard_cmd" 2>/dev/null; then
+        # Verificar si es posible
+        if command -v $(echo "$verify_cmd" | awk '{print $1}') &> /dev/null; then
+            local clipboard_content
+            clipboard_content=$(eval "$verify_cmd" 2>/dev/null || true)
+            if [[ "$clipboard_content" == "$content" ]]; then
+                success "Llave copiada al portapapeles ($method_name)"
+                return 0
+            else
+                warning "El contenido del portapapeles no coincide (método: $method_name)"
+                return 1
+            fi
+        else
+            success "Llave copiada al portapapeles ($method_name, sin verificación)"
+            return 0
+        fi
+    fi
+    
+    warning "No se pudo copiar al portapapeles usando $method_name"
     return 1
 }
 
@@ -140,18 +164,6 @@ initial_checks() {
         fi
     fi
     
-    # Check for required directories
-    if [[ ! -d "$HOME" ]]; then
-        error "No se encontró el directorio HOME"
-        return 1
-    fi
-    
-    # Note: We no longer auto-detect terminal interactivity
-    # Interactive mode is controlled explicitly via:
-    # 1. --non-interactive flag (sets INTERACTIVE_MODE=false)
-    # 2. INTERACTIVE_MODE environment variable
-    # 3. Default is true (interactive)
-    # This prevents false positives when running in terminals
     
     return 0
 }

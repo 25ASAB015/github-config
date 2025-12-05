@@ -93,6 +93,8 @@ check_optional_dependencies() {
     local no_header="${1:-false}"
     local optional_deps=("gpg" "gh" "git-credential-manager")
     local missing_optional=()
+    local has_clipboard=false
+    local clipboard_status="✓"
     
     if [[ "$no_header" != "true" ]]; then
         info "Dependencias opcionales:"
@@ -119,6 +121,16 @@ check_optional_dependencies() {
         fi
     done
 
+    # Detectar herramienta de portapapeles (cualquiera de xclip/xsel/wl-copy)
+    if command -v wl-copy &> /dev/null || command -v xclip &> /dev/null || command -v xsel &> /dev/null; then
+        has_clipboard=true
+    else
+        clipboard_status="○ (no instalado)"
+    fi
+
+    # Mostrar estado de portapapeles
+    printf "  $(c bold)%s$(cr) $(c bold)Clipboard (xclip/xsel/wl-copy)$(cr)\n" "${has_clipboard:+$(c success)✓$(cr):-$(c muted)○$(cr)}"
+
     # Ofrecer instalación interactiva de opcionales cuando falten
     if [[ "$INTERACTIVE_MODE" == "true" ]] && [[ ${#missing_optional[@]} -gt 0 ]]; then
         local os_type
@@ -135,6 +147,40 @@ check_optional_dependencies() {
                 fi
             fi
         done
+    fi
+
+    # Ofrecer instalar herramientas de portapapeles si no hay ninguna
+    if [[ "$INTERACTIVE_MODE" == "true" ]] && [[ "$has_clipboard" != true ]]; then
+        local os_type
+        os_type=$(detect_os)
+        local clipboard_pkgs=()
+
+        case "$os_type" in
+            arch|manjaro|endeavouros|garuda)
+                clipboard_pkgs=("wl-clipboard" "xclip")
+                ;;
+            ubuntu|debian|linuxmint|pop)
+                clipboard_pkgs=("wl-clipboard" "xclip")
+                ;;
+            fedora|rhel|centos|rocky|alma)
+                clipboard_pkgs=("wl-clipboard" "xclip")
+                ;;
+            darwin)
+                # pbcopy ya viene instalado
+                clipboard_pkgs=()
+                ;;
+            *)
+                clipboard_pkgs=("xclip")
+                ;;
+        esac
+
+        if [[ ${#clipboard_pkgs[@]} -gt 0 ]] && ask_yes_no "No se encontró herramienta de portapapeles. ¿Deseas instalar ${clipboard_pkgs[*]} ahora?" "y"; then
+            for pkg in "${clipboard_pkgs[@]}"; do
+                if ! auto_install_dependencies "$os_type" "$pkg"; then
+                    warning "No se pudo instalar '$pkg' automáticamente"
+                fi
+            done
+        fi
     fi
 }
 
