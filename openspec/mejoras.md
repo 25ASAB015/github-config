@@ -1294,7 +1294,7 @@ EOF
 
 ---
 
-### 23. **Verificación Post-Instalación**
+ok ### 23. **Verificación Post-Instalación**
 
 **Mejora Propuesta:**
 ```bash

@@ -46,7 +46,8 @@ generate_gpg_key() {
     # Check for existing GPG key
     if command -v gpg &> /dev/null; then
         local existing_key
-        existing_key=$(gpg --list-secret-keys --keyid-format=long "$USER_EMAIL" 2>/dev/null | grep 'sec' | head -n1 | sed 's/.*\/\([A-Z0-9]*\).*/\1/')
+        # Allow the pipeline to fail quietly when no key exists to avoid aborting under set -euo pipefail
+        existing_key=$(gpg --list-secret-keys --keyid-format=long "$USER_EMAIL" 2>/dev/null | grep 'sec' | head -n1 | sed 's/.*\/\([A-Z0-9]*\).*/\1/' || true)
         
         if [[ -n "$existing_key" ]]; then
             info "Ya existe una llave GPG para $USER_EMAIL"

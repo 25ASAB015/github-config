@@ -58,7 +58,10 @@ display_keys() {
         echo ""
         
         if ask_yes_no "¿Deseas copiar la llave SSH al portapapeles?"; then
-            copy_to_clipboard "$HOME/.ssh/id_ed25519.pub"
+            # Avoid aborting the whole script if clipboard tooling is missing
+            if ! copy_to_clipboard "$HOME/.ssh/id_ed25519.pub"; then
+                warning "No se pudo copiar la llave SSH al portapapeles (instala xclip/xsel/wl-copy)."
+            fi
             echo ""
         fi
     else
@@ -84,7 +87,10 @@ display_keys() {
             echo ""
             
             if ask_yes_no "¿Deseas copiar la llave GPG al portapapeles?"; then
-                copy_to_clipboard "$gpg_temp"
+                # Avoid aborting if clipboard tooling is missing
+                if ! copy_to_clipboard "$gpg_temp"; then
+                    warning "No se pudo copiar la llave GPG al portapapeles (instala xclip/xsel/wl-copy)."
+                fi
                 echo ""
             fi
         else
@@ -387,7 +393,7 @@ run_verification_suite() {
     name_len=${#test_name}
     padding=$((total_width - name_len))
     printf "  %s%*s" "$test_name" "$padding" ""
-    if command -v git-credential-manager &>/dev/null; then
+    if command -v git-credential-manager &>/dev/null || command -v git-credential-manager-core &>/dev/null; then
         printf "%b\n" "$(c success)✓$(cr)"
         tests_passed=$((tests_passed + 1))
     else

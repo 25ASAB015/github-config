@@ -92,18 +92,50 @@ check_dependencies() {
 check_optional_dependencies() {
     local no_header="${1:-false}"
     local optional_deps=("gpg" "gh" "git-credential-manager")
+    local missing_optional=()
     
     if [[ "$no_header" != "true" ]]; then
         info "Dependencias opcionales:"
     fi
     
     for dep in "${optional_deps[@]}"; do
-        if command -v "$dep" &> /dev/null; then
+        local found=false
+        if [[ "$dep" == "git-credential-manager" ]]; then
+            # Algunos paquetes instalan el binario como git-credential-manager-core
+            if command -v git-credential-manager &> /dev/null || command -v git-credential-manager-core &> /dev/null; then
+                found=true
+            fi
+        else
+            if command -v "$dep" &> /dev/null; then
+                found=true
+            fi
+        fi
+
+        if [[ "$found" == true ]]; then
             printf "  $(c bold)$(c success)✓$(cr) $(c bold)%s$(cr)\n" "$dep"
         else
             printf "  $(c muted)○$(cr) $(c bold)%s$(cr) $(c muted)(no instalado)$(cr)\n" "$dep"
+            missing_optional+=("$dep")
         fi
     done
+
+    # Ofrecer instalación interactiva de opcionales cuando falten
+    if [[ "$INTERACTIVE_MODE" == "true" ]] && [[ ${#missing_optional[@]} -gt 0 ]]; then
+        local os_type
+        os_type=$(detect_os)
+
+        for dep in "${missing_optional[@]}"; do
+            # git-credential-manager y gh son críticos para la experiencia GitHub
+            local default_answer="y"
+            if ask_yes_no "No se encontró '$dep'. ¿Deseas instalarlo automáticamente?" "$default_answer"; then
+                if auto_install_dependencies "$os_type" "$dep"; then
+                    success "$dep instalado correctamente"
+                else
+                    warning "No se pudo instalar '$dep' automáticamente"
+                fi
+            fi
+        done
+    fi
 }
 
 #==============================================================================
@@ -119,21 +151,53 @@ check_optional_dependencies() {
 auto_install_dependencies() {
     local os_type="$1"
     local package="$2"
+    local pkg_to_install="$package"
+    
+    # Map package names per OS when repos use different identifiers
+    case "$os_type" in
+        arch|manjaro|endeavouros|garuda)
+            case "$package" in
+                git-credential-manager)
+                    pkg_to_install="git-credential-manager-bin"
+                    ;;
+                gh)
+                    pkg_to_install="github-cli"
+                    ;;
+            esac
+            ;;
+    esac
     
     info "Intentando instalar $package..."
     
     case "$os_type" in
         arch|manjaro|endeavouros|garuda)
             if command -v pacman &> /dev/null; then
-                if sudo pacman -S --noconfirm "$package" 2>/dev/null; then
+                if sudo pacman -S --noconfirm "$pkg_to_install" 2>/dev/null; then
                     success "$package instalado correctamente"
                     return 0
                 fi
             fi
+
+            # Fallback a AUR con yay para paquetes no disponibles en pacman
+            if command -v yay &> /dev/null; then
+                # Lista de candidatos en AUR según el paquete lógico solicitado
+                local aur_candidates=("$pkg_to_install")
+                if [[ "$package" == "git-credential-manager" ]]; then
+                    # Orden de preferencia: paquete AUR directo, luego variantes core/bin
+                    aur_candidates=("git-credential-manager-bin")
+                fi
+
+                for aur_pkg in "${aur_candidates[@]}"; do
+                    if yay -S --noconfirm "$aur_pkg" 2>/dev/null; then
+                        success "$package instalado correctamente (AUR: $aur_pkg)"
+                        return 0
+                    fi
+                done
+            fi
             ;;
         ubuntu|debian|linuxmint|pop)
             if command -v apt &> /dev/null; then
-                if sudo apt update -qq && sudo apt install -y "$package" 2>/dev/null; then
+                if sudo apt update -qq && sudo apt install -y "$pkg_to_install" 2>/dev/null; then
                     success "$package instalado correctamente"
                     return 0
                 fi
@@ -141,12 +205,12 @@ auto_install_dependencies() {
             ;;
         fedora|rhel|centos|rocky|alma)
             if command -v dnf &> /dev/null; then
-                if sudo dnf install -y "$package" 2>/dev/null; then
+                if sudo dnf install -y "$pkg_to_install" 2>/dev/null; then
                     success "$package instalado correctamente"
                     return 0
                 fi
             elif command -v yum &> /dev/null; then
-                if sudo yum install -y "$package" 2>/dev/null; then
+                if sudo yum install -y "$pkg_to_install" 2>/dev/null; then
                     success "$package instalado correctamente"
                     return 0
                 fi
@@ -154,7 +218,7 @@ auto_install_dependencies() {
             ;;
         darwin)
             if command -v brew &> /dev/null; then
-                if brew install "$package" 2>/dev/null; then
+                if brew install "$pkg_to_install" 2>/dev/null; then
                     success "$package instalado correctamente"
                     return 0
                 fi
