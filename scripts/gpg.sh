@@ -113,7 +113,7 @@ EOF
             warning "Bloqueo detectado, limpiando y reintentando..."
             cleanup_gpg_processes
             sleep 5
-            ((retry_count++))
+            retry_count=$((retry_count + 1))
             continue
         else
             error "No se pudo generar la llave GPG (código de salida: $gpg_exit_code)"

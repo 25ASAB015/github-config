@@ -241,7 +241,7 @@ show_final_instructions() {
     echo ""
     echo ""
     
-    ((paso_num++))
+    paso_num=$((paso_num + 1))
     printf "%b\n" "$(c bold)$(c accent)📁 PASO ${paso_num}: ARCHIVOS GENERADOS$(cr)"
     printf "%b\n" "$(c muted)$(cr)   ├─ $(c bold)$(c primary)~/.gitconfig$(cr)     $(c muted)→ Configuración profesional de Git$(cr)"
     printf "%b\n" "$(c muted)$(cr)   ├─ $(c bold)$(c primary)~/.gitmessage$(cr)    $(c muted)→ Plantilla para mensajes de commit$(cr)"
@@ -250,7 +250,7 @@ show_final_instructions() {
     echo ""
     echo ""
     
-    ((paso_num++))
+    paso_num=$((paso_num + 1))
     printf "%b\n" "$(c bold)$(c accent)🔐 PASO ${paso_num}: CREDENTIAL MANAGER$(cr)"
     printf "%b\n" "$(c muted)$(cr)   ├─ $(c bold)$(c success)✓$(cr) $(c bold)Git Credential Manager configurado$(cr)"
     printf "%b\n" "$(c muted)$(cr)   ├─ $(c muted)No se solicitará contraseña en cada operación$(cr)"

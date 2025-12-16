@@ -82,7 +82,7 @@ ensure_github_cli_ready() {
                             return 1
                         fi
                         ;;
-                    ubuntu|debian|linuxmint|pop)
+                    ubuntu|debian|linuxmint|pop|elementary)
                         GH_INSTALL_ATTEMPTED=true
                         if auto_install_dependencies "$os_type" gh; then
                             success "GitHub CLI instalado correctamente"
@@ -134,7 +134,15 @@ ensure_github_cli_ready() {
                 echo ""
                 echo "  1. Instala GitHub CLI:"
                 echo "     $(c primary)sudo pacman -S github-cli$(cr)  # Arch Linux"
-                echo "     $(c primary)sudo apt install gh$(cr)        # Ubuntu/Debian"
+                echo "     $(c primary)sudo apt update$(cr)            # Ubuntu/Debian"
+                echo "     $(c primary)sudo apt install wget apt-transport-https ca-certificates -y$(cr)"
+                echo "     $(c primary)wget -qO- https://cli.github.com/packages/githubcli-archive-keyring.gpg | \\$(cr)"
+                echo "         sudo tee /usr/share/keyrings/githubcli-archive-keyring.gpg > /dev/null$(cr)"
+                echo "     $(c primary)echo \"deb [arch=\$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] \\$(cr)"
+                echo "          https://cli.github.com/packages stable main\" | \\$(cr)"
+                echo "         sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null$(cr)"
+                echo "     $(c primary)sudo apt update$(cr)"
+                echo "     $(c primary)sudo apt install gh -y$(cr)"
                 echo ""
                 echo "  2. Autentica GitHub CLI:"
                 echo "     $(c primary)gh auth login$(cr)"

@@ -159,7 +159,7 @@ check_optional_dependencies() {
             arch|manjaro|endeavouros|garuda)
                 clipboard_pkgs=("wl-clipboard" "xclip")
                 ;;
-            ubuntu|debian|linuxmint|pop)
+            ubuntu|debian|linuxmint|pop|elementary)
                 clipboard_pkgs=("wl-clipboard" "xclip")
                 ;;
             fedora|rhel|centos|rocky|alma)
@@ -241,11 +241,71 @@ auto_install_dependencies() {
                 done
             fi
             ;;
-        ubuntu|debian|linuxmint|pop)
+        ubuntu|debian|linuxmint|pop|elementary)
             if command -v apt &> /dev/null; then
-                if sudo apt update -qq && sudo apt install -y "$pkg_to_install" 2>/dev/null; then
-                    success "$package instalado correctamente"
-                    return 0
+                # Instalación especial para Git Credential Manager en Debian/Ubuntu
+                if [[ "$package" == "git-credential-manager" ]]; then
+                    info "Detectado sistema Debian/Ubuntu, instalando git-credential-manager..."
+                    
+                    # Descargar el .deb oficial desde GitHub Releases (versión fija)
+                    local gcm_tmp_deb="/tmp/gcm-linux_amd64.2.5.1.deb"
+                    local gcm_url="https://github.com/GitCredentialManager/git-credential-manager/releases/download/v2.5.1/gcm-linux_amd64.2.5.1.deb"
+
+                    info "Actualizando repositorios e instalando dependencias..."
+                    if ! sudo apt update; then
+                        warning "Falló apt update"
+                    fi
+                    
+                    if ! sudo apt install -y wget ca-certificates; then
+                        warning "Falló la instalación de wget/ca-certificates"
+                    fi
+
+                    info "Descargando git-credential-manager desde GitHub..."
+                    if wget -O "$gcm_tmp_deb" "$gcm_url"; then
+                        info "Descarga exitosa, instalando paquete .deb..."
+                        
+                        # Primer intento de instalación
+                        if sudo dpkg -i "$gcm_tmp_deb"; then
+                            rm -f "$gcm_tmp_deb"
+                            success "git-credential-manager instalado correctamente"
+                            return 0
+                        else
+                            info "Resolviendo dependencias faltantes..."
+                            # Resolver dependencias faltantes e intentar de nuevo
+                            sudo apt -f install -y
+                            if sudo dpkg -i "$gcm_tmp_deb"; then
+                                rm -f "$gcm_tmp_deb"
+                                success "git-credential-manager instalado correctamente (con dependencias resueltas)"
+                                return 0
+                            else
+                                warning "Falló dpkg -i incluso después de resolver dependencias"
+                            fi
+                        fi
+                    else
+                        warning "Falló la descarga del .deb desde: $gcm_url"
+                    fi
+
+                    rm -f "$gcm_tmp_deb"
+                fi
+
+                # Instalación especial para GitHub CLI usando el repo oficial
+                if [[ "$package" == "gh" || "$package" == "github-cli" ]]; then
+                    if \
+                        sudo apt update && \
+                        sudo apt install wget apt-transport-https ca-certificates -y && \
+                        wget -qO- https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo tee /usr/share/keyrings/githubcli-archive-keyring.gpg > /dev/null && \
+                        echo "deb [arch=\$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null && \
+                        sudo apt update && \
+                        sudo apt install gh -y
+                    then
+                        success "GitHub CLI (gh) instalado correctamente desde el repositorio oficial"
+                        return 0
+                    fi
+                else
+                    if sudo apt update -qq && sudo apt install -y "$pkg_to_install" 2>/dev/null; then
+                        success "$package instalado correctamente"
+                        return 0
+                    fi
                 fi
             fi
             ;;
@@ -296,9 +356,17 @@ show_manual_gh_install_instructions() {
             echo "  $(c primary)sudo pacman -S github-cli$(cr)"
             echo "  $(c muted)o desde AUR:$(cr) $(c primary)yay -S github-cli$(cr)"
             ;;
-        ubuntu|debian|linuxmint|pop)
+        ubuntu|debian|linuxmint|pop|elementary)
             printf "%b\n" "$(c warning)Ubuntu / Debian:$(cr)"
-            echo "  $(c primary)sudo apt update && sudo apt install gh$(cr)"
+            echo "  $(c primary)sudo apt update$(cr)"
+            echo "  $(c primary)sudo apt install wget apt-transport-https ca-certificates -y$(cr)"
+            echo "  $(c primary)wget -qO- https://cli.github.com/packages/githubcli-archive-keyring.gpg | \\$(cr)"
+            echo "      sudo tee /usr/share/keyrings/githubcli-archive-keyring.gpg > /dev/null$(cr)"
+            echo "  $(c primary)echo \"deb [arch=\$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] \\$(cr)"
+            echo "       https://cli.github.com/packages stable main\" | \\$(cr)"
+            echo "      sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null$(cr)"
+            echo "  $(c primary)sudo apt update$(cr)"
+            echo "  $(c primary)sudo apt install gh -y$(cr)"
             ;;
         fedora|rhel|centos|rocky|alma)
             printf "%b\n" "$(c warning)Fedora / RHEL / CentOS:$(cr)"

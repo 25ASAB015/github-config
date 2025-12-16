@@ -51,7 +51,7 @@ detect_os() {
                     arch|manjaro|endeavouros|garuda)
                         echo "$ID"
                         ;;
-                    ubuntu|debian|linuxmint|pop)
+                    ubuntu|debian|linuxmint|pop|elementary)
                         echo "$ID"
                         ;;
                     fedora|rhel|centos|rocky|alma)
